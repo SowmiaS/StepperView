@@ -1,5 +1,7 @@
 package com.ss.stepperview
 
+import android.os.Parcel
+import android.os.Parcelable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,9 +14,8 @@ import androidx.compose.material.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.Placeable
-import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.*
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import kotlin.math.max
 
@@ -43,6 +44,10 @@ fun Step(
 ) {
     content()
 }
+
+private val Measurable.stepAlignment
+        get() = (parentData as? StepAlignmentData)?.stepAlignment ?: StepAlignment.RIGHT
+
 
 @Composable
 fun StepperViewLayout(
@@ -148,3 +153,47 @@ fun StepperViewLine(modifier: Modifier) {
             .background(Color.Blue)
     )
 }
+
+enum class StepAlignment {
+    LEFT,
+    RIGHT
+}
+
+class StepAlignmentData(val stepAlignment: StepAlignment) : ParentDataModifier {
+
+    override fun Density.modifyParentData(parentData: Any?): Any? {
+        return this@StepAlignmentData
+    }
+}
+
+interface StepScope {
+
+    fun Modifier.align(stepAlignment: StepAlignment) {
+        StepAlignmentData(stepAlignment)
+    }
+
+    companion object StepScope
+}
+
+enum class StepIndicatorAlignment {
+    TOP,
+    BOTTOM,
+    CENTER
+}
+
+class StepIndicatorAlignmentData(val stepIndicatorAlignment: StepIndicatorAlignment) : ParentDataModifier {
+
+    override fun Density.modifyParentData(parentData: Any?): Any? {
+        return this@StepIndicatorAlignmentData
+    }
+}
+
+interface StepIndicatorScope {
+
+    fun Modifier.align(stepAlignment: StepAlignment) {
+        StepAlignmentData(stepAlignment)
+    }
+
+    companion object StepIndicatorScope
+}
+
