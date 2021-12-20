@@ -172,7 +172,7 @@ fun StepperViewLayout(
                         max(indicatorPlaceable.width, linePlaceableWidth).plus(horizontalSpacing)
                     when (alignments[j]) {
                         StepAlignment.RIGHT -> x = rightStepXPosition
-                        StepAlignment.LEFT -> x = leftStepXPosition
+                        StepAlignment.LEFT -> x = maxLeftStepWidth - stepsPlaceables[j].width - horizontalSpacing
                     }
                     stepsPlaceables[j].placeRelative(x = x, y = y)
                 }
