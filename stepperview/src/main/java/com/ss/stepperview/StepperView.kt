@@ -88,7 +88,7 @@ fun StepperViewLayout(
         modifier = modifier
     ) { measurables, constraints ->
 
-        val horizontalSpacing = 50 // Spacing between Indicator and Step.
+        val horizontalSpacing = 0 // Spacing between Indicator and Step.
         var verticalSpacing = 100 // Spacing between Steps.
 
         val stepsMeasurables = measurables
@@ -97,30 +97,81 @@ fun StepperViewLayout(
                     .not() && it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_INDICATOR)
                     .not()
             }
+
+        val indicatorMeasurables = measurables
+            .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_INDICATOR) }
+
+        val maxLeftIntrinsicWidth = stepsMeasurables.filter {  measurable -> measurable.stepAlignment == StepAlignment.LEFT }.maxOfOrNull { it.maxIntrinsicWidth(
+            Int.MAX_VALUE) } ?: 0
+        val maxRightIntrinsicWidth : Int = stepsMeasurables.filter { measurable -> measurable.stepAlignment == StepAlignment.RIGHT }.maxOfOrNull{  it.maxIntrinsicWidth(
+                Int.MAX_VALUE) } ?: 0
+
+
         val alignments = ArrayList<StepAlignment>()
 
         var maxLeftStepWidth = 0
         var maxRightStepWidth = 0
         var indicatorXPosition = 0
+
+
+
+        val stepIndicatorPlaceables = indicatorMeasurables
+            .map { it.measure(constraints = constraints) }
+
+        var noOfSides = 0
+        if(maxLeftIntrinsicWidth != 0) ++noOfSides
+        if(maxRightIntrinsicWidth != 0) ++noOfSides
+        val equalStepSpacing = ( constraints.maxWidth - stepIndicatorPlaceables[0].width) / noOfSides
+        var leftStepConstraints = constraints.copy(
+            maxWidth = equalStepSpacing
+        )
+        var rightStepConstraints = constraints.copy(
+            maxWidth = equalStepSpacing
+        )
+
+        if( maxLeftIntrinsicWidth == 0){
+            rightStepConstraints = constraints.copy(
+                maxWidth = equalStepSpacing
+            )
+        }
+        else if(maxRightIntrinsicWidth == 0 ){
+            leftStepConstraints = constraints.copy(
+                maxWidth = equalStepSpacing
+            )
+        }
+        else if( maxLeftIntrinsicWidth < equalStepSpacing && maxRightIntrinsicWidth > equalStepSpacing){
+            leftStepConstraints = constraints.copy(
+                maxWidth = maxLeftIntrinsicWidth
+            )
+            rightStepConstraints = constraints.copy(
+                maxWidth = equalStepSpacing + ( equalStepSpacing - maxLeftIntrinsicWidth )
+            )
+        }
+        else if( maxRightIntrinsicWidth < equalStepSpacing && maxLeftIntrinsicWidth > maxRightIntrinsicWidth){
+            rightStepConstraints = constraints.copy(
+                maxWidth = maxRightIntrinsicWidth
+            )
+            leftStepConstraints = constraints.copy(
+                maxWidth = equalStepSpacing + ( equalStepSpacing - maxRightIntrinsicWidth )
+            )
+        }
+
         val stepsPlaceables = stepsMeasurables
             .map {
-              val  placeable = it.measure(constraints = constraints)
-              alignments.add(it.stepAlignment)
-              if(it.stepAlignment == StepAlignment.LEFT) {
-                  maxLeftStepWidth = Math.max(maxLeftStepWidth, placeable.width)
-              }else{
-                  maxRightStepWidth = Math.max(maxRightStepWidth, placeable.width)
-              }
-              placeable
+                alignments.add(it.stepAlignment)
+                if(it.stepAlignment == StepAlignment.LEFT) {
+                    val placeable = it.measure(constraints = leftStepConstraints)
+                    maxLeftStepWidth = Math.max(maxLeftStepWidth, placeable.width)
+                    placeable
+                }else{
+                    val placeable = it.measure(constraints = rightStepConstraints)
+                    maxRightStepWidth = Math.max(maxRightStepWidth, placeable.width)
+                    placeable
+                }
             }
         if(maxLeftStepWidth != 0){
             indicatorXPosition = maxLeftStepWidth + horizontalSpacing
         }
-
-
-        val stepIndicatorPlaceables = measurables
-            .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_INDICATOR) }
-            .map { it.measure(constraints = constraints) }
 
         val stepLinePlaceables = measurables
             .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_LINE) }
