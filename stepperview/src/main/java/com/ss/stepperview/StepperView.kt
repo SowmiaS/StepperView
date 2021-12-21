@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import com.ss.stepperview.StepIndicatorScopeInstance.align
 import kotlin.math.max
 
 private const val LAYOUTID_STEPPERVIEW_INDICATOR = "LAYOUTID_STEPPERVIEW_INDICATOR"
@@ -44,7 +45,7 @@ fun StepperView(
                 StepperViewIndicator(
                     modifier = Modifier.layoutId(
                         LAYOUTID_STEPPERVIEW_INDICATOR.plus(it)
-                    )
+                    ).align(StepIndicatorAlignment.CENTER)
                 )
             }
         },
@@ -69,6 +70,9 @@ fun Step(
 
 private val Measurable.stepAlignment
     get() = (parentData as? StepAlignmentData)?.stepAlignment ?: StepAlignment.RIGHT
+
+private val Measurable.stepIndicatorAlignment
+    get() = (parentData as? StepIndicatorAlignmentData)?.stepIndicatorAlignment ?: StepIndicatorAlignment.CENTER
 
 
 @Composable
@@ -100,6 +104,7 @@ fun StepperViewLayout(
 
         val indicatorMeasurables = measurables
             .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_INDICATOR) }
+        val indicatorAlignment: StepIndicatorAlignment = indicatorMeasurables[0].stepIndicatorAlignment
 
         val maxLeftIntrinsicWidth = stepsMeasurables.filter {  measurable -> measurable.stepAlignment == StepAlignment.LEFT }.maxOfOrNull { it.maxIntrinsicWidth(
             Int.MAX_VALUE) } ?: 0
@@ -176,10 +181,25 @@ fun StepperViewLayout(
         val stepLinePlaceables = measurables
             .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_LINE) }
             .mapIndexed { index, measurable ->
-                val lineHeight =
-                    (stepsPlaceables[index/stepsPerRow.noOfSteps].height / 2 + stepsPlaceables[(index/stepsPerRow.noOfSteps) + stepsPerRow.noOfSteps].height / 2).plus(
+                var lineHeight = 0
+                when (indicatorAlignment) {
+                    StepIndicatorAlignment.CENTER ->
+                        lineHeight = (stepsPlaceables[index  *stepsPerRow.noOfSteps].height / 2 + stepsPlaceables[(index * stepsPerRow.noOfSteps) + stepsPerRow.noOfSteps].height / 2).plus(
                         verticalSpacing
                     ).minus(stepIndicatorPlaceables[index].height)
+                    StepIndicatorAlignment.TOP ->
+                        lineHeight = stepsPlaceables[index * stepsPerRow.noOfSteps].height .plus(
+                            verticalSpacing
+                        ).minus(stepIndicatorPlaceables[index].height)
+                    StepIndicatorAlignment.BOTTOM ->
+                    lineHeight = stepsPlaceables[(index * stepsPerRow.noOfSteps) + stepsPerRow.noOfSteps].height .plus(
+                        verticalSpacing
+                    ).minus(stepIndicatorPlaceables[index].height)
+                }
+
+
+
+
                 measurable.measure(
                     constraints = constraints.copy(
                         minHeight = lineHeight,
@@ -231,16 +251,17 @@ fun StepperViewLayout(
                 y += stepPlaceable.height
 
                 // Placing Indicators
-                val indicatorAlignment: StepIndicatorAlignment = StepIndicatorAlignment.CENTER
                 var indicatorY = 0
 
                 when (indicatorAlignment) {
                     StepIndicatorAlignment.CENTER -> indicatorY =
                         (y - (stepPlaceable.height / 2)) - (indicatorPlaceable.height / 2)   // depends on how indicator has to be shown centre, top, bottom . For now center
                     StepIndicatorAlignment.TOP -> indicatorY =
-                        y - (indicatorPlaceable.height / 2)   // depends on how indicator has to be shown centre, top, bottom . For now center
+                        y - (stepPlaceable.height)  // depends on how indicator has to be shown centre, top, bottom . For now center
+                          // depends on how indicator has to be shown centre, top, bottom . For now center
                     StepIndicatorAlignment.BOTTOM -> indicatorY =
-                        y - (stepPlaceable.height - (indicatorPlaceable.height / 2))  // depends on how indicator has to be shown centre, top, bottom . For now center
+                    y - (indicatorPlaceable.height )
+
                 }
 
                 indicatorPlaceable.placeRelative(x = indicatorXPosition , y = indicatorY)
@@ -321,11 +342,12 @@ class StepIndicatorAlignmentData(val stepIndicatorAlignment: StepIndicatorAlignm
 }
 
 interface StepIndicatorScope {
+    fun Modifier.align(stepIndicatorAlignment: StepIndicatorAlignment) : Modifier
+}
 
-    fun Modifier.align(stepAlignment: StepAlignment) {
-        StepAlignmentData(stepAlignment)
-    }
-
-    companion object StepIndicatorScope
+internal object StepIndicatorScopeInstance : StepIndicatorScope {
+    override fun Modifier.align(stepIndicatorAlignment: StepIndicatorAlignment) : Modifier = this.then(
+        StepIndicatorAlignmentData(stepIndicatorAlignment)
+    )
 }
 
