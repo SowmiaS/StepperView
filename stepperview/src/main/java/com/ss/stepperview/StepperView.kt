@@ -93,7 +93,7 @@ fun StepperViewLayout(
     ) { measurables, constraints ->
 
         val horizontalSpacing = 0 // Spacing between Indicator and Step.
-        var verticalSpacing = 100 // Spacing between Steps.
+        var verticalSpacing = 20 // Spacing between Steps.
 
         val stepsMeasurables = measurables
             .filter {
