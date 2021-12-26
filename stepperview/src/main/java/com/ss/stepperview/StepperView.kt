@@ -32,10 +32,6 @@ fun StepperView(
     stepsPerRow : StepsPerRow = StepsPerRow.ONE,
     content: @Composable StepScope.() -> Unit
 ) {
-
-    IconButton(onClick = { /*TODO*/ }) {
-
-    }
     StepperViewLayout(
         Modifier,
         stepsPerRow  = stepsPerRow,
@@ -175,7 +171,7 @@ fun StepperViewLayout(
                 return indicators.indicators[index].placeable?.width ?: 0
             }
             fun getLineWidth(index: Int) :Int {
-                return lines.lines[index].placeable?.width ?: 0
+                return lines.components[index].placeable?.width ?: 0
             }
 
 
@@ -281,7 +277,7 @@ interface StepComponentLayout{
     val place : Placeable.PlacementScope.(x :Int, y :Int) -> Unit
 }
 
-class BaseStepComponentLayout(val measurable: Measurable,val constraints: Constraints? = null) : StepComponentLayout{
+class BaseStepComponentLayout(val measurable: Measurable) : StepComponentLayout{
     override val intrinsicWidth: Int
         get() = measurable.maxIntrinsicWidth(Int.MAX_VALUE)
     override val intrinsicHeight: Int
@@ -302,12 +298,7 @@ class Step(val measurable: Measurable) : StepComponentLayout by BaseStepComponen
 }
 
 class StepLine(val measurable: Measurable) : StepComponentLayout by BaseStepComponentLayout(measurable){
-     fun measure(constraints: Constraints, lineHeight : Int){
-        placeable = measurable.measure(constraints.copy(
-            minHeight = lineHeight,
-            maxHeight = lineHeight
-        ))
-    }
+
 }
 
 class StepIndicator(val measurable: Measurable) : StepComponentLayout by BaseStepComponentLayout(measurable = measurable) {
@@ -327,7 +318,6 @@ class StepIndicator(val measurable: Measurable) : StepComponentLayout by BaseSte
 
 
 class StepIndicators(val indicatorMeasurables: List<Measurable>){
-
     var indicators = arrayListOf<StepIndicator>()
 
     init {
@@ -364,52 +354,51 @@ class StepIndicators(val indicatorMeasurables: List<Measurable>){
 
 
 
+open abstract class BaseComponentList<T : StepComponentLayout>(measurables: List<Measurable>){
 
+    var components = arrayListOf<T>()
 
-class StepLines(val lineMeasurables: List<Measurable>){
-
-    var lines = arrayListOf<StepLine>()
+    abstract fun instance(measurable: Measurable) : T
 
     init {
-        lineMeasurables.forEach {
-            lines.add(StepLine(it))
+        measurables.forEach {
+            components.add(instance(it))
         }
     }
-
     val maxIntrinsicWidth : Int
         get(){
-            return lineMeasurables.maxOfOrNull { it.maxIntrinsicWidth(Int.MAX_VALUE) } ?: 0
+            return components.maxOfOrNull { it.intrinsicWidth } ?: 0
         }
+}
 
+class StepLines(lineMeasurables: List<Measurable>) : BaseComponentList<StepLine>(lineMeasurables){
+
+    override fun instance(measurable: Measurable) = StepLine(measurable)
 
     fun measure(constraints: Constraints, lineHeights: (Int) -> Int){
-        lines.forEachIndexed { index, it ->
-            it.measure(constraints = constraints , lineHeights(index))
+        components.forEachIndexed { index, it ->
+            it.measure(constraints = constraints.copy(
+                minHeight = lineHeights(index),
+                maxHeight = lineHeights(index)
+            ))
         }
     }
 
     val place : Placeable.PlacementScope.( x :Int, y :Int , linespacing : ( lineIndex : Int ) -> Int) -> Unit = { x , y  , linespacing ->
         var yPosition = y
-        lines.forEachIndexed { index, it ->
+        components.forEachIndexed { index, it ->
             it.place.invoke(this, x, yPosition)
             yPosition += (it.placeable?.height ?: 0) + linespacing.invoke(index)
         }
     }
-
 }
 
-
-
-class StepRow(stepMeasurables: List<Measurable>, stepsPerRow: StepsPerRow){
-
-    var width = 0
+class StepRow(stepMeasurables: List<Measurable>, stepsPerRow: StepsPerRow = StepsPerRow.ONE) {
 
     var steps = arrayListOf<Step>()
 
     init {
-        for (i in 0..stepMeasurables.size-1) {
-            steps.add(Step(stepMeasurables[i]))
-        }
+        stepMeasurables.forEach { steps.add(Step(it)) }
     }
 
     var height = 0
@@ -439,20 +428,15 @@ class StepRow(stepMeasurables: List<Measurable>, stepsPerRow: StepsPerRow){
     }
 }
 
-
-
-
-
-
-class Rows(val stepMeasurables : List<Measurable>, val stepsPerRow: StepsPerRow){
+class Rows(stepMeasurables : List<Measurable>, val stepsPerRow: StepsPerRow){
 
     val rows = arrayListOf<StepRow>()
 
     init {
-        for (i in 0..stepMeasurables.size-1 step stepsPerRow.noOfSteps) {
+        for (i in stepMeasurables.indices step stepsPerRow.noOfSteps) {
             rows.add(
                 StepRow(
-                    stepMeasurables.toMutableList().subList(i, i + stepsPerRow.noOfSteps   )
+                    stepMeasurables.toMutableList().subList(i, i + stepsPerRow.noOfSteps)
                         .toList(),
                     stepsPerRow = stepsPerRow
                 )
@@ -533,10 +517,6 @@ class Rows(val stepMeasurables : List<Measurable>, val stepsPerRow: StepsPerRow)
             )
         return constraints
     }
-
-
-
-
 
 }
 
