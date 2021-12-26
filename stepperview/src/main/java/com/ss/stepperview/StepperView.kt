@@ -272,6 +272,60 @@ internal object StepIndicatorScopeInstance : StepIndicatorScope {
 
 
 // ---- ----
+
+interface StepComponentLayout{
+    val intrinsicWidth : Int
+    val intrinsicHeight : Int
+    fun measure(constraints: Constraints)
+    var placeable : Placeable?
+    val place : Placeable.PlacementScope.(x :Int, y :Int) -> Unit
+}
+
+class BaseStepComponentLayout(val measurable: Measurable,val constraints: Constraints? = null) : StepComponentLayout{
+    override val intrinsicWidth: Int
+        get() = measurable.maxIntrinsicWidth(Int.MAX_VALUE)
+    override val intrinsicHeight: Int
+        get() = measurable.maxIntrinsicHeight(Int.MAX_VALUE)
+    override var placeable: Placeable? = null
+    override fun measure(constraints: Constraints) {
+        placeable = measurable.measure(constraints)
+    }
+    override val place : Placeable.PlacementScope.(x :Int, y :Int) -> Unit = { x : Int, y : Int ->
+        placeable?.placeRelative(x = x, y = y)
+    }
+}
+
+class Step(val measurable: Measurable) : StepComponentLayout by BaseStepComponentLayout(measurable = measurable) {
+    // create new class for step alignment related code
+    val stepAlignment
+        get() = (measurable.parentData as? StepAlignmentData)?.stepAlignment ?: StepAlignment.RIGHT
+}
+
+class StepLine(val measurable: Measurable) : StepComponentLayout by BaseStepComponentLayout(measurable){
+     fun measure(constraints: Constraints, lineHeight : Int){
+        placeable = measurable.measure(constraints.copy(
+            minHeight = lineHeight,
+            maxHeight = lineHeight
+        ))
+    }
+}
+
+class StepIndicator(val measurable: Measurable) : StepComponentLayout by BaseStepComponentLayout(measurable = measurable) {
+    //TODO: create separate class for step Indicator alignment
+    var alignment : StepIndicatorAlignment? = null
+
+    var xPosition = 0
+    var yPosition = 0
+
+    override val place : Placeable.PlacementScope.(x : Int, y : Int) -> Unit = { x : Int, y : Int ->
+        xPosition = x
+        yPosition = y
+        placeable?.placeRelative(x,y)
+    }
+}
+
+
+
 class StepIndicators(val indicatorMeasurables: List<Measurable>){
 
     var indicators = arrayListOf<StepIndicator>()
@@ -308,40 +362,9 @@ class StepIndicators(val indicatorMeasurables: List<Measurable>){
     }
 }
 
-class StepIndicator(val measurable: Measurable){
 
-    var alignment : StepIndicatorAlignment? = null
-    var placeable : Placeable? = null
 
-    var xPosition = 0
-    var yPosition = 0
 
-    fun measure(constraints: Constraints){
-        placeable = measurable.measure(constraints)
-    }
-
-    val place : Placeable.PlacementScope.(x : Int, y : Int) -> Unit = { x : Int, y : Int ->
-        xPosition = x
-        yPosition = y
-        placeable?.placeRelative(x = x,y = y)
-    }
-}
-
-class StepLine(val measurable: Measurable){
-
-    var placeable : Placeable? = null
-
-    fun measure(constraints: Constraints, lineHeight : Int){
-        placeable = measurable.measure(constraints.copy(
-            minHeight = lineHeight,
-            maxHeight = lineHeight
-        ))
-    }
-
-    val place : Placeable.PlacementScope.(x :Int, y :Int) -> Unit = { x, y ->
-        placeable?.placeRelative(x = x, y= y)
-    }
-}
 
 class StepLines(val lineMeasurables: List<Measurable>){
 
@@ -418,33 +441,7 @@ class StepRow(stepMeasurables: List<Measurable>, stepsPerRow: StepsPerRow){
 
 
 
-class Step(measurable: Measurable){
 
-    val measurable = measurable
-    var placeable : Placeable? = null
-
-    val stepAlignment
-        get() = (measurable.parentData as? StepAlignmentData)?.stepAlignment ?: StepAlignment.RIGHT
-
-    var width = 0
-    var height = 0
-    var x = 0
-    var y = 0
-
-    val intrinsicWidth = measurable.maxIntrinsicWidth(Int.MAX_VALUE)
-    val intrinsicHeight = measurable.maxIntrinsicHeight(Int.MAX_VALUE)
-
-    fun measure(constraints: Constraints){
-        placeable = measurable.measure(constraints = constraints)
-    }
-
-
-
-    val place : Placeable.PlacementScope.(x :Int, y :Int) -> Unit = { x : Int, y : Int ->
-       placeable?.placeRelative(x = x, y = y)
-    }
-
-}
 
 
 class Rows(val stepMeasurables : List<Measurable>, val stepsPerRow: StepsPerRow){
@@ -536,6 +533,8 @@ class Rows(val stepMeasurables : List<Measurable>, val stepsPerRow: StepsPerRow)
             )
         return constraints
     }
+
+
 
 
 
