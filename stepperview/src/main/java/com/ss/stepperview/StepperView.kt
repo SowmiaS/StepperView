@@ -1,5 +1,6 @@
 package com.ss.stepperview
 
+import android.graphics.Point
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.material.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
@@ -108,7 +110,10 @@ fun StepperViewLayout(
 
             val stepRows = Rows(stepsMeasurables, stepsPerRow)
             val indicators = StepIndicators(indicatorMeasurables)
-            val lines = StepLines(lineMeasurables)
+            val lineMeasureAndPlaceHelpersImpl = LineMeasureAndPlaceHelpersImpl(indicators)
+            val lines = StepLines(lineMeasurables, lineMeasureAndPlaceHelpersImpl)
+
+            //TODO : constraintsManager
 
             stepRows.measure(
                 constraints.copy(
@@ -150,51 +155,59 @@ fun StepperViewLayout(
                             if (index == 0)
                                 stepRows.rows[index].height
                             else
-                            stepRows.rows[index].height + verticalSpacing
+                                stepRows.rows[index].height + verticalSpacing
                         }
                     }
                 }
-
             indicators.place.invoke(
                 this,
                 stepRows.maxLeftInstrinsicWidth,
                 -(indicators.indicators[0].placeable?.height ?:0 ) / 2  ,
                 verticalSpacingForIndicator
             )
-            val isLineOverlappingIndicator = false
-
-            fun getIndicatorHeight(index: Int) :Int {
-                return indicators.indicators[index].placeable?.height ?: 0
-            }
-
-            fun getIndicatorWidth(index: Int) :Int {
-                return indicators.indicators[index].placeable?.width ?: 0
-            }
-            fun getLineWidth(index: Int) :Int {
-                return lines.components[index].placeable?.width ?: 0
-            }
 
 
-            fun getOverlappingOffset(index: Int) :Int {
-                return if(isLineOverlappingIndicator)  0 else getIndicatorHeight(index)
-            }
-
-
-            val lineHeightForIndex: (Int) -> Int = { lineIndex ->
-                indicators.indicators[lineIndex + 1].yPosition - indicators.indicators[lineIndex].yPosition - getOverlappingOffset(lineIndex)
-               // - ( indicators.indicators[lineIndex].placeable?.height ?: 0 ) // TODO : for supporting line overlapping indicators
-            }
-            lines.measure(constraints, lineHeightForIndex)
-            val verticalSpacingForLine: (lineIndex: Int) -> Int = { it -> getOverlappingOffset(it) }
-            val xPosition = indicators.indicators[0].xPosition + ( getIndicatorWidth(0) - getLineWidth(0) ) / 2
-            val yPosition = indicators.indicators[0].yPosition + getOverlappingOffset(0)
-            lines.place.invoke(this, xPosition, yPosition, verticalSpacingForLine)
+            lines.measure(constraints)
+            val lineStartPoint = lineMeasureAndPlaceHelpersImpl.firstLinePosition(lines.firstLineWidth)
+            lines.place.invoke(this, lineStartPoint.x, lineStartPoint.y)
 
         }
 
     }
 }
 
+// ---
+interface LineMeasureAndPlaceHelpers {
+
+    fun shouldLineOverlapIndicator() : Boolean
+    fun verticalspacing( forLineIndex: Int ) : Int
+    fun lineHeight( forLineIndex: Int ) : Int
+    fun firstLinePosition(lineWidth: Int) : Point
+}
+
+class LineMeasureAndPlaceHelpersImpl(val indicators: StepIndicators) : LineMeasureAndPlaceHelpers{
+
+    override fun shouldLineOverlapIndicator(): Boolean = false
+
+    override fun verticalspacing(forLineIndex: Int): Int {
+        return getOverlappingOffset(forLineIndex)
+    }
+
+    override fun lineHeight(forLineIndex: Int): Int {
+        return indicators.indicators[forLineIndex + 1].yPosition - indicators.indicators[forLineIndex].yPosition - getOverlappingOffset(forLineIndex)
+    }
+
+    private fun getOverlappingOffset(index: Int) :Int {
+        return if(shouldLineOverlapIndicator())  0 else indicators.getIndicatorHeight(index)
+    }
+
+    override fun firstLinePosition(firstLineWidth: Int): Point {
+        val xPosition = indicators.indicators[0].xPosition + ( indicators.getIndicatorWidth(0) - firstLineWidth ) / 2
+        val yPosition = indicators.indicators[0].yPosition + getOverlappingOffset(0)
+        return Point(xPosition, yPosition)
+    }
+}
+//---
 @Composable
 fun StepperViewIndicator(modifier: Modifier) {
     OutlinedButton(
@@ -331,6 +344,12 @@ class StepIndicators(val indicatorMeasurables: List<Measurable>){
             return indicatorMeasurables.maxOfOrNull { it.maxIntrinsicWidth(Int.MAX_VALUE) } ?: 0
         }
 
+    fun getIndicatorHeight(index: Int) :Int = indicators[index].placeable?.height ?: 0
+
+    fun getIndicatorWidth(index: Int) :Int = indicators[index].placeable?.width ?: 0
+
+    val firstIndicatorPosition : Point = Point( indicators[0].xPosition , indicators[0].yPosition)
+
     fun measure(constraints: Constraints){
         indicators.forEach {
             it.measure(constraints)
@@ -371,24 +390,27 @@ open abstract class BaseComponentList<T : StepComponentLayout>(measurables: List
         }
 }
 
-class StepLines(lineMeasurables: List<Measurable>) : BaseComponentList<StepLine>(lineMeasurables){
+class StepLines(lineMeasurables: List<Measurable>, private val lineMeasureAndPlaceHelpers: LineMeasureAndPlaceHelpers) : BaseComponentList<StepLine>(lineMeasurables){
 
     override fun instance(measurable: Measurable) = StepLine(measurable)
 
-    fun measure(constraints: Constraints, lineHeights: (Int) -> Int){
+    val firstLineWidth
+            get() = components[0].placeable?.width ?: 0
+
+    fun measure(constraints: Constraints){
         components.forEachIndexed { index, it ->
             it.measure(constraints = constraints.copy(
-                minHeight = lineHeights(index),
-                maxHeight = lineHeights(index)
+                minHeight = lineMeasureAndPlaceHelpers.lineHeight(index),
+                maxHeight = lineMeasureAndPlaceHelpers.lineHeight(index)
             ))
         }
     }
 
-    val place : Placeable.PlacementScope.( x :Int, y :Int , linespacing : ( lineIndex : Int ) -> Int) -> Unit = { x , y  , linespacing ->
+    val place : Placeable.PlacementScope.( x :Int, y :Int) -> Unit = { x , y ->
         var yPosition = y
         components.forEachIndexed { index, it ->
             it.place.invoke(this, x, yPosition)
-            yPosition += (it.placeable?.height ?: 0) + linespacing.invoke(index)
+            yPosition += (it.placeable?.height ?: 0) + lineMeasureAndPlaceHelpers.verticalspacing(index)
         }
     }
 }
