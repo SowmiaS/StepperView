@@ -9,21 +9,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.ss.stepperview.StepIndicatorScopeInstance.align
-import kotlin.math.max
 
 private const val LAYOUTID_STEPPERVIEW_INDICATOR = "LAYOUTID_STEPPERVIEW_INDICATOR"
 private const val LAYOUTID_STEPPERVIEW_LINE = "LAYOUTID_STEPPERVIEW_LINE"
+private const val VERTICAL_SPACING = 20
+
 
 enum class StepsPerRow(val noOfSteps: Int){
     ONE(1), TWO(2)
@@ -91,9 +90,6 @@ fun StepperViewLayout(
         modifier = modifier
     ) { measurables, constraints ->
 
-        val horizontalSpacing = 0 // Spacing between Indicator and Step.
-        var verticalSpacing = 20 // Spacing between Steps.
-
         val stepsMeasurables = measurables
             .filter {
                 it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_LINE)
@@ -108,11 +104,12 @@ fun StepperViewLayout(
 
         layout(constraints.maxWidth, constraints.maxHeight) {
 
-            val stepRows = Rows(stepsMeasurables, stepsPerRow)
-            val indicators = StepIndicators(indicatorMeasurables)
+            val stepRowsMeasureAndPlaceHelpersImpl = StepRowMeasureAndPlaceHelpersImpl()
+            val stepRows = Rows(stepsMeasurables, stepsPerRow, stepRowsMeasureAndPlaceHelpersImpl)
+            val indicatorMeasureAndPlaceHelpersImpl = IndicatorMeasureAndPlaceHelpersImpl(stepRows)
+            val indicators = StepIndicators(indicatorMeasurables, indicatorMeasureAndPlaceHelpersImpl)
             val lineMeasureAndPlaceHelpersImpl = LineMeasureAndPlaceHelpersImpl(indicators)
             val lines = StepLines(lineMeasurables, lineMeasureAndPlaceHelpersImpl)
-
             //TODO : constraintsManager
 
             stepRows.measure(
@@ -124,72 +121,76 @@ fun StepperViewLayout(
                 )
             )
             indicators.measure(constraints)
+
             stepRows.place.invoke(
-                this,
-                0,
-                0,
-                stepRows.maxLeftInstrinsicWidth + Math.max(
-                    indicators.maxIntrinsicWidth,
-                    lines.maxIntrinsicWidth
-                ),
-                0,
-                verticalSpacing
+                this,0,0,stepRows.maxLeftInstrinsicWidth + Math.max(indicators.maxIntrinsicWidth, lines.maxIntrinsicWidth), 0
             )
-            val verticalSpacingForIndicator: (indicatorIndex: Int, alignment: StepIndicatorAlignment) -> Int =
-                { index, alignment: StepIndicatorAlignment ->
-
-                    when (alignment) {
-                        StepIndicatorAlignment.TOP -> {
-                            if (index == 0)
-                                0
-                            else
-                                stepRows.rows[index - 1].height + verticalSpacing
-                        }
-                        StepIndicatorAlignment.CENTER -> {
-                            if (index == 0)
-                                stepRows.rows[index].height / 2
-                            else
-                                stepRows.rows[index - 1].height / 2 + stepRows.rows[index].height / 2 + verticalSpacing
-                        }
-                        StepIndicatorAlignment.BOTTOM -> {
-                            if (index == 0)
-                                stepRows.rows[index].height
-                            else
-                                stepRows.rows[index].height + verticalSpacing
-                        }
-                    }
-                }
-            indicators.place.invoke(
-                this,
-                stepRows.maxLeftInstrinsicWidth,
-                -(indicators.indicators[0].placeable?.height ?:0 ) / 2  ,
-                verticalSpacingForIndicator
-            )
-
+            val indicatorStartPoint = indicatorMeasureAndPlaceHelpersImpl.firstIndicatorPosition(stepRows.maxLeftInstrinsicWidth, indicators.firstIndicatorHeight)
+            indicators.place.invoke(this, indicatorStartPoint.x, indicatorStartPoint.y)
 
             lines.measure(constraints)
             val lineStartPoint = lineMeasureAndPlaceHelpersImpl.firstLinePosition(lines.firstLineWidth)
             lines.place.invoke(this, lineStartPoint.x, lineStartPoint.y)
-
         }
-
     }
 }
 
 // ---
-interface LineMeasureAndPlaceHelpers {
 
+interface StepRowMeasureAndPlaceHelpers{
+    fun verticalSpacing(belowStepRowWithIndex: Int): Int
+}
+
+class StepRowMeasureAndPlaceHelpersImpl(): StepRowMeasureAndPlaceHelpers{
+    override fun verticalSpacing(belowStepRowWithIndex: Int): Int = VERTICAL_SPACING
+}
+
+interface IndicatorMeasureAndPlaceHelpers{
+    fun verticalSpacing(aboveIndicatorWithIndex: Int, alignment: StepIndicatorAlignment): Int
+    fun firstIndicatorPosition(firstRowWidth: Int, firstIndicatorHeight: Int): Point
+}
+
+class IndicatorMeasureAndPlaceHelpersImpl(val stepRows: Rows): IndicatorMeasureAndPlaceHelpers{
+    override fun firstIndicatorPosition(firstRowWidth: Int, firstIndicatorHeight: Int): Point {
+        val xPosition = stepRows.maxLeftInstrinsicWidth
+        val yPosition = -firstIndicatorHeight/ 2
+        return Point(xPosition, yPosition)
+    }
+
+    override fun verticalSpacing(aboveIndicatorWithIndex: Int, alignment: StepIndicatorAlignment): Int {
+        return when (alignment) {
+            StepIndicatorAlignment.TOP -> {
+                if (aboveIndicatorWithIndex == 0)
+                    0
+                else
+                    stepRows.rows[aboveIndicatorWithIndex - 1].height + stepRows.verticalSpacing
+            }
+            StepIndicatorAlignment.CENTER -> {
+                if (aboveIndicatorWithIndex == 0)
+                    stepRows.rows[aboveIndicatorWithIndex].height / 2
+                else
+                    stepRows.rows[aboveIndicatorWithIndex - 1].height / 2 + stepRows.rows[aboveIndicatorWithIndex].height / 2 + stepRows.verticalSpacing
+            }
+            StepIndicatorAlignment.BOTTOM -> {
+                if (aboveIndicatorWithIndex == 0)
+                    stepRows.rows[aboveIndicatorWithIndex].height
+                else
+                    stepRows.rows[aboveIndicatorWithIndex].height + stepRows.verticalSpacing
+            }
+        }
+    }
+}
+interface LineMeasureAndPlaceHelpers {
     fun shouldLineOverlapIndicator() : Boolean
-    fun verticalspacing( forLineIndex: Int ) : Int
+    fun verticalSpacing(forLineIndex: Int ) : Int
     fun lineHeight( forLineIndex: Int ) : Int
     fun firstLinePosition(lineWidth: Int) : Point
 }
 
 class LineMeasureAndPlaceHelpersImpl(val indicators: StepIndicators) : LineMeasureAndPlaceHelpers{
-
     override fun shouldLineOverlapIndicator(): Boolean = false
 
-    override fun verticalspacing(forLineIndex: Int): Int {
+    override fun verticalSpacing(forLineIndex: Int): Int {
         return getOverlappingOffset(forLineIndex)
     }
 
@@ -330,7 +331,10 @@ class StepIndicator(val measurable: Measurable) : StepComponentLayout by BaseSte
 
 
 
-class StepIndicators(val indicatorMeasurables: List<Measurable>){
+class StepIndicators(
+    val indicatorMeasurables: List<Measurable>,
+    indicatorMeasureAndPlaceHelpers: IndicatorMeasureAndPlaceHelpers
+){
     var indicators = arrayListOf<StepIndicator>()
 
     init {
@@ -348,7 +352,8 @@ class StepIndicators(val indicatorMeasurables: List<Measurable>){
 
     fun getIndicatorWidth(index: Int) :Int = indicators[index].placeable?.width ?: 0
 
-    val firstIndicatorPosition : Point = Point( indicators[0].xPosition , indicators[0].yPosition)
+    val firstIndicatorPosition = Point( indicators[0].xPosition , indicators[0].yPosition)
+    val firstIndicatorHeight = getIndicatorHeight(0)
 
     fun measure(constraints: Constraints){
         indicators.forEach {
@@ -356,7 +361,7 @@ class StepIndicators(val indicatorMeasurables: List<Measurable>){
         }
     }
 
-    val place : Placeable.PlacementScope.(x : Int, y : Int, gap: ( index:Int, alignment : StepIndicatorAlignment ) -> Int ) -> Unit = { x : Int, y : Int, gap: (index : Int, alignment : StepIndicatorAlignment) -> Int ->
+    val place : Placeable.PlacementScope.(x : Int, y : Int ) -> Unit = { x : Int, y : Int ->
         var yPosition = 0
 
         when(indicatorMeasurables[0].stepIndicatorAlignment){
@@ -365,7 +370,7 @@ class StepIndicators(val indicatorMeasurables: List<Measurable>){
             StepIndicatorAlignment.BOTTOM -> yPosition = -( y * 2 )
         }
         indicators.forEachIndexed { index, it ->
-            yPosition += gap.invoke(index, it.alignment ?: StepIndicatorAlignment.CENTER)
+            yPosition += indicatorMeasureAndPlaceHelpers.verticalSpacing(index, it.alignment ?: StepIndicatorAlignment.CENTER)
             it.place.invoke(this, x, yPosition)
         }
     }
@@ -410,7 +415,7 @@ class StepLines(lineMeasurables: List<Measurable>, private val lineMeasureAndPla
         var yPosition = y
         components.forEachIndexed { index, it ->
             it.place.invoke(this, x, yPosition)
-            yPosition += (it.placeable?.height ?: 0) + lineMeasureAndPlaceHelpers.verticalspacing(index)
+            yPosition += (it.placeable?.height ?: 0) + lineMeasureAndPlaceHelpers.verticalSpacing(index)
         }
     }
 }
@@ -450,9 +455,11 @@ class StepRow(stepMeasurables: List<Measurable>, stepsPerRow: StepsPerRow = Step
     }
 }
 
-class Rows(stepMeasurables : List<Measurable>, val stepsPerRow: StepsPerRow){
+class Rows(stepMeasurables : List<Measurable>, val stepsPerRow: StepsPerRow, stepRowMeasureAndPlaceHelpers: StepRowMeasureAndPlaceHelpers){
 
     val rows = arrayListOf<StepRow>()
+
+    val verticalSpacing : Int = 0 //TODO
 
     init {
         for (i in stepMeasurables.indices step stepsPerRow.noOfSteps) {
@@ -508,11 +515,11 @@ class Rows(stepMeasurables : List<Measurable>, val stepsPerRow: StepsPerRow){
         }
     }
 
-    val place : Placeable.PlacementScope.(x : Int, y : Int, x1 : Int, y1 : Int, verticalSpacing: Int) -> Unit = { x : Int, y : Int, x1 : Int, y1 : Int, verticalSpacing: Int ->
+    val place : Placeable.PlacementScope.(x : Int, y : Int, x1 : Int, y1 : Int) -> Unit = { x : Int, y : Int, x1 : Int, y1 : Int ->
         var yPosition = Math.max(y,y1)
-        rows.forEach {
-            it.place.invoke(this, x, yPosition, x1 , yPosition)
-            yPosition = yPosition + it.height + verticalSpacing
+        rows.forEachIndexed { index, stepRow ->
+            stepRow.place.invoke(this, x, yPosition, x1 , yPosition)
+            yPosition += stepRow.height + stepRowMeasureAndPlaceHelpers.verticalSpacing(belowStepRowWithIndex = index)
         }
     }
 
