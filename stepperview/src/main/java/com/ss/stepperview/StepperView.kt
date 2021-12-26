@@ -1,7 +1,5 @@
 package com.ss.stepperview
 
-import android.os.Parcel
-import android.os.Parcelable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.*
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.ss.stepperview.StepIndicatorScopeInstance.align
@@ -43,9 +42,11 @@ fun StepperView(
         indicatorContent = {
             repeat(items.size) {
                 StepperViewIndicator(
-                    modifier = Modifier.layoutId(
-                        LAYOUTID_STEPPERVIEW_INDICATOR.plus(it)
-                    ).align(StepIndicatorAlignment.CENTER)
+                    modifier = Modifier
+                        .layoutId(
+                            LAYOUTID_STEPPERVIEW_INDICATOR.plus(it)
+                        )
+                        .align(StepIndicatorAlignment.TOP)
                 )
             }
         },
@@ -101,183 +102,100 @@ fun StepperViewLayout(
                     .not() && it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_INDICATOR)
                     .not()
             }
-
         val indicatorMeasurables = measurables
             .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_INDICATOR) }
-        val indicatorAlignment: StepIndicatorAlignment = indicatorMeasurables[0].stepIndicatorAlignment
-
-        val maxLeftIntrinsicWidth = stepsMeasurables.filter {  measurable -> measurable.stepAlignment == StepAlignment.LEFT }.maxOfOrNull { it.maxIntrinsicWidth(
-            Int.MAX_VALUE) } ?: 0
-        val maxRightIntrinsicWidth : Int = stepsMeasurables.filter { measurable -> measurable.stepAlignment == StepAlignment.RIGHT }.maxOfOrNull{  it.maxIntrinsicWidth(
-                Int.MAX_VALUE) } ?: 0
-
-
-        val alignments = ArrayList<StepAlignment>()
-
-        var maxLeftStepWidth = 0
-        var maxRightStepWidth = 0
-        var indicatorXPosition = 0
-
-
-
-        val stepIndicatorPlaceables = indicatorMeasurables
-            .map { it.measure(constraints = constraints) }
-
-        var noOfSides = 0
-        if(maxLeftIntrinsicWidth != 0) ++noOfSides
-        if(maxRightIntrinsicWidth != 0) ++noOfSides
-        val equalStepSpacing = ( constraints.maxWidth - stepIndicatorPlaceables[0].width) / noOfSides
-        var leftStepConstraints = constraints.copy(
-            maxWidth = equalStepSpacing
-        )
-        var rightStepConstraints = constraints.copy(
-            maxWidth = equalStepSpacing
-        )
-
-        if( maxLeftIntrinsicWidth == 0){
-            rightStepConstraints = constraints.copy(
-                maxWidth = equalStepSpacing
-            )
-        }
-        else if(maxRightIntrinsicWidth == 0 ){
-            leftStepConstraints = constraints.copy(
-                maxWidth = equalStepSpacing
-            )
-        }
-        else if( maxLeftIntrinsicWidth < equalStepSpacing && maxRightIntrinsicWidth > equalStepSpacing){
-            leftStepConstraints = constraints.copy(
-                maxWidth = maxLeftIntrinsicWidth
-            )
-            rightStepConstraints = constraints.copy(
-                maxWidth = equalStepSpacing + ( equalStepSpacing - maxLeftIntrinsicWidth )
-            )
-        }
-        else if( maxRightIntrinsicWidth < equalStepSpacing && maxLeftIntrinsicWidth > maxRightIntrinsicWidth){
-            rightStepConstraints = constraints.copy(
-                maxWidth = maxRightIntrinsicWidth
-            )
-            leftStepConstraints = constraints.copy(
-                maxWidth = equalStepSpacing + ( equalStepSpacing - maxRightIntrinsicWidth )
-            )
-        }
-
-        val stepsPlaceables = stepsMeasurables
-            .map {
-                alignments.add(it.stepAlignment)
-                if(it.stepAlignment == StepAlignment.LEFT) {
-                    val placeable = it.measure(constraints = leftStepConstraints)
-                    maxLeftStepWidth = Math.max(maxLeftStepWidth, placeable.width)
-                    placeable
-                }else{
-                    val placeable = it.measure(constraints = rightStepConstraints)
-                    maxRightStepWidth = Math.max(maxRightStepWidth, placeable.width)
-                    placeable
-                }
-            }
-        if(maxLeftStepWidth != 0){
-            indicatorXPosition = maxLeftStepWidth + horizontalSpacing
-        }
-
-        val stepLinePlaceables = measurables
+        val lineMeasurables = measurables
             .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_LINE) }
-            .mapIndexed { index, measurable ->
-                var lineHeight = 0
-                when (indicatorAlignment) {
-                    StepIndicatorAlignment.CENTER ->
-                        lineHeight = (stepsPlaceables[index  *stepsPerRow.noOfSteps].height / 2 + stepsPlaceables[(index * stepsPerRow.noOfSteps) + stepsPerRow.noOfSteps].height / 2).plus(
-                        verticalSpacing
-                    ).minus(stepIndicatorPlaceables[index].height)
-                    StepIndicatorAlignment.TOP ->
-                        lineHeight = stepsPlaceables[index * stepsPerRow.noOfSteps].height .plus(
-                            verticalSpacing
-                        ).minus(stepIndicatorPlaceables[index].height)
-                    StepIndicatorAlignment.BOTTOM ->
-                    lineHeight = stepsPlaceables[(index * stepsPerRow.noOfSteps) + stepsPerRow.noOfSteps].height .plus(
-                        verticalSpacing
-                    ).minus(stepIndicatorPlaceables[index].height)
-                }
 
-
-
-
-                measurable.measure(
-                    constraints = constraints.copy(
-                        minHeight = lineHeight,
-                        maxHeight = lineHeight
-                    )
-                )
-            }
-
-        val maxWidthIndicatorAndLine =
-            stepIndicatorPlaceables.plus(stepLinePlaceables).maxOf { it.width }
-
-        val leftStepXPosition = 0
-        val rightStepXPosition = maxLeftStepWidth + maxWidthIndicatorAndLine + horizontalSpacing
 
         layout(constraints.maxWidth, constraints.maxHeight) {
-            val noOfSteps = stepsPlaceables.size
-            var y = 0
 
-            // Either Step or Indicator can be bigger. So based on the size of step and height. Initial Y value is set.
-            if (stepIndicatorPlaceables[0].height > stepsPlaceables[0].height) {
-                y = (stepIndicatorPlaceables[0].height / 2) - (stepsPlaceables[0].height / 2)
-                verticalSpacing += stepIndicatorPlaceables[0].height
-            }
-            for (i in 0 until noOfSteps step stepsPerRow.noOfSteps) {
-                val stepPlaceable = stepsPlaceables[i]
-                val indicatorPlaceable = stepIndicatorPlaceables[i/stepsPerRow.noOfSteps]
-                var linePlaceable: Placeable? = null
-                var linePlaceableWidth = 0
+            val stepRows = Rows(stepsMeasurables, stepsPerRow)
+            val indicators = StepIndicators(indicatorMeasurables)
+            val lines = StepLines(lineMeasurables)
 
-                // no of lines is one less than the no of steps.
-                if ((i/stepsPerRow.noOfSteps) <= stepLinePlaceables.size - 1) {
-                    linePlaceable = stepLinePlaceables[i/stepsPerRow.noOfSteps]
-                    linePlaceableWidth = linePlaceable.width
-                }
-
-
-                // Placing Steps
-                for( j in i until i+stepsPerRow.noOfSteps) {
-
-                    var x =
-                        max(indicatorPlaceable.width, linePlaceableWidth).plus(horizontalSpacing)
-                    when (alignments[j]) {
-                        StepAlignment.RIGHT -> x = rightStepXPosition
-                        StepAlignment.LEFT -> x = maxLeftStepWidth - stepsPlaceables[j].width - horizontalSpacing
-                    }
-                    stepsPlaceables[j].placeRelative(x = x, y = y)
-                }
-
-                y += stepPlaceable.height
-
-                // Placing Indicators
-                var indicatorY = 0
-
-                when (indicatorAlignment) {
-                    StepIndicatorAlignment.CENTER -> indicatorY =
-                        (y - (stepPlaceable.height / 2)) - (indicatorPlaceable.height / 2)   // depends on how indicator has to be shown centre, top, bottom . For now center
-                    StepIndicatorAlignment.TOP -> indicatorY =
-                        y - (stepPlaceable.height)  // depends on how indicator has to be shown centre, top, bottom . For now center
-                          // depends on how indicator has to be shown centre, top, bottom . For now center
-                    StepIndicatorAlignment.BOTTOM -> indicatorY =
-                    y - (indicatorPlaceable.height )
-
-                }
-
-                indicatorPlaceable.placeRelative(x = indicatorXPosition , y = indicatorY)
-                val indicatorXMid = indicatorXPosition + indicatorPlaceable.width / 2
-
-                // Placing Line
-                val lineY = indicatorY + indicatorPlaceable.height
-                linePlaceable?.placeRelative(
-                    x = indicatorXMid - linePlaceableWidth / 2,
-                    y = lineY
+            stepRows.measure(
+                constraints.copy(
+                    maxWidth = constraints.maxWidth - Math.max(
+                        indicators.maxIntrinsicWidth,
+                        lines.maxIntrinsicWidth
+                    )
                 )
+            )
+            indicators.measure(constraints)
+            stepRows.place.invoke(
+                this,
+                0,
+                0,
+                stepRows.maxLeftInstrinsicWidth + Math.max(
+                    indicators.maxIntrinsicWidth,
+                    lines.maxIntrinsicWidth
+                ),
+                0,
+                verticalSpacing
+            )
+            val verticalSpacingForIndicator: (indicatorIndex: Int, alignment: StepIndicatorAlignment) -> Int =
+                { index, alignment: StepIndicatorAlignment ->
 
-                // Adding vertical spacing
-                y += verticalSpacing
+                    when (alignment) {
+                        StepIndicatorAlignment.TOP -> {
+                            if (index == 0)
+                                0
+                            else
+                                stepRows.rows[index - 1].height + verticalSpacing
+                        }
+                        StepIndicatorAlignment.CENTER -> {
+                            if (index == 0)
+                                stepRows.rows[index].height / 2
+                            else
+                                stepRows.rows[index - 1].height / 2 + stepRows.rows[index].height / 2 + verticalSpacing
+                        }
+                        StepIndicatorAlignment.BOTTOM -> {
+                            if (index == 0)
+                                stepRows.rows[index].height
+                            else
+                            stepRows.rows[index].height + verticalSpacing
+                        }
+                    }
+                }
+
+            indicators.place.invoke(
+                this,
+                stepRows.maxLeftInstrinsicWidth,
+                -(indicators.indicators[0].placeable?.height ?:0 ) / 2  ,
+                verticalSpacingForIndicator
+            )
+            val isLineOverlappingIndicator = false
+
+            fun getIndicatorHeight(index: Int) :Int {
+                return indicators.indicators[index].placeable?.height ?: 0
             }
+
+            fun getIndicatorWidth(index: Int) :Int {
+                return indicators.indicators[index].placeable?.width ?: 0
+            }
+            fun getLineWidth(index: Int) :Int {
+                return lines.lines[index].placeable?.width ?: 0
+            }
+
+
+            fun getOverlappingOffset(index: Int) :Int {
+                return if(isLineOverlappingIndicator)  0 else getIndicatorHeight(index)
+            }
+
+
+            val lineHeightForIndex: (Int) -> Int = { lineIndex ->
+                indicators.indicators[lineIndex + 1].yPosition - indicators.indicators[lineIndex].yPosition - getOverlappingOffset(lineIndex)
+               // - ( indicators.indicators[lineIndex].placeable?.height ?: 0 ) // TODO : for supporting line overlapping indicators
+            }
+            lines.measure(constraints, lineHeightForIndex)
+            val verticalSpacingForLine: (lineIndex: Int) -> Int = { it -> getOverlappingOffset(it) }
+            val xPosition = indicators.indicators[0].xPosition + ( getIndicatorWidth(0) - getLineWidth(0) ) / 2
+            val yPosition = indicators.indicators[0].yPosition + getOverlappingOffset(0)
+            lines.place.invoke(this, xPosition, yPosition, verticalSpacingForLine)
+
         }
+
     }
 }
 
@@ -349,5 +267,277 @@ internal object StepIndicatorScopeInstance : StepIndicatorScope {
     override fun Modifier.align(stepIndicatorAlignment: StepIndicatorAlignment) : Modifier = this.then(
         StepIndicatorAlignmentData(stepIndicatorAlignment)
     )
+}
+
+
+
+// ---- ----
+class StepIndicators(val indicatorMeasurables: List<Measurable>){
+
+    var indicators = arrayListOf<StepIndicator>()
+
+    init {
+        indicatorMeasurables.forEach {
+            indicators.add(StepIndicator(it))
+        }
+    }
+
+    val maxIntrinsicWidth : Int
+        get(){
+            return indicatorMeasurables.maxOfOrNull { it.maxIntrinsicWidth(Int.MAX_VALUE) } ?: 0
+        }
+
+    fun measure(constraints: Constraints){
+        indicators.forEach {
+            it.measure(constraints)
+        }
+    }
+
+    val place : Placeable.PlacementScope.(x : Int, y : Int, gap: ( index:Int, alignment : StepIndicatorAlignment ) -> Int ) -> Unit = { x : Int, y : Int, gap: (index : Int, alignment : StepIndicatorAlignment) -> Int ->
+        var yPosition = 0
+
+        when(indicatorMeasurables[0].stepIndicatorAlignment){
+            StepIndicatorAlignment.CENTER -> yPosition = y
+            StepIndicatorAlignment.TOP -> yPosition = 0
+            StepIndicatorAlignment.BOTTOM -> yPosition = -( y * 2 )
+        }
+        indicators.forEachIndexed { index, it ->
+            yPosition += gap.invoke(index, it.alignment ?: StepIndicatorAlignment.CENTER)
+            it.place.invoke(this, x, yPosition)
+        }
+    }
+}
+
+class StepIndicator(val measurable: Measurable){
+
+    var alignment : StepIndicatorAlignment? = null
+    var placeable : Placeable? = null
+
+    var xPosition = 0
+    var yPosition = 0
+
+    fun measure(constraints: Constraints){
+        placeable = measurable.measure(constraints)
+    }
+
+    val place : Placeable.PlacementScope.(x : Int, y : Int) -> Unit = { x : Int, y : Int ->
+        xPosition = x
+        yPosition = y
+        placeable?.placeRelative(x = x,y = y)
+    }
+}
+
+class StepLine(val measurable: Measurable){
+
+    var placeable : Placeable? = null
+
+    fun measure(constraints: Constraints, lineHeight : Int){
+        placeable = measurable.measure(constraints.copy(
+            minHeight = lineHeight,
+            maxHeight = lineHeight
+        ))
+    }
+
+    val place : Placeable.PlacementScope.(x :Int, y :Int) -> Unit = { x, y ->
+        placeable?.placeRelative(x = x, y= y)
+    }
+}
+
+class StepLines(val lineMeasurables: List<Measurable>){
+
+    var lines = arrayListOf<StepLine>()
+
+    init {
+        lineMeasurables.forEach {
+            lines.add(StepLine(it))
+        }
+    }
+
+    val maxIntrinsicWidth : Int
+        get(){
+            return lineMeasurables.maxOfOrNull { it.maxIntrinsicWidth(Int.MAX_VALUE) } ?: 0
+        }
+
+
+    fun measure(constraints: Constraints, lineHeights: (Int) -> Int){
+        lines.forEachIndexed { index, it ->
+            it.measure(constraints = constraints , lineHeights(index))
+        }
+    }
+
+    val place : Placeable.PlacementScope.( x :Int, y :Int , linespacing : ( lineIndex : Int ) -> Int) -> Unit = { x , y  , linespacing ->
+        var yPosition = y
+        lines.forEachIndexed { index, it ->
+            it.place.invoke(this, x, yPosition)
+            yPosition += (it.placeable?.height ?: 0) + linespacing.invoke(index)
+        }
+    }
+
+}
+
+
+
+class StepRow(stepMeasurables: List<Measurable>, stepsPerRow: StepsPerRow){
+
+    var width = 0
+
+    var steps = arrayListOf<Step>()
+
+    init {
+        for (i in 0..stepMeasurables.size-1) {
+            steps.add(Step(stepMeasurables[i]))
+        }
+    }
+
+    var height = 0
+        get() = steps.maxOfOrNull { it.placeable?.height ?: 0 } ?: 0
+
+    val maxIntrinsicWidth = steps.maxOfOrNull { it.intrinsicWidth } ?: 0
+    val maxIntrinsicHeight = steps.maxOfOrNull { it.intrinsicHeight } ?: 0
+
+    fun measure(leftConstraints: Constraints, rightConstraints: Constraints){
+        steps.forEach {
+            when(it.stepAlignment){
+                StepAlignment.LEFT -> it.measure(leftConstraints)
+                StepAlignment.RIGHT -> it.measure(rightConstraints)
+            }
+        }
+    }
+
+    val place : Placeable.PlacementScope.(x: Int, y:Int , x1: Int, y1:Int) -> Unit = { x: Int, y:Int , x1: Int, y1:Int ->
+        steps.forEach {
+            if( it.stepAlignment == StepAlignment.LEFT){
+                it.place.invoke(this, x, y)
+            }else{
+                it.place.invoke(this, x1, y1)
+            }
+
+        }
+    }
+}
+
+
+
+class Step(measurable: Measurable){
+
+    val measurable = measurable
+    var placeable : Placeable? = null
+
+    val stepAlignment
+        get() = (measurable.parentData as? StepAlignmentData)?.stepAlignment ?: StepAlignment.RIGHT
+
+    var width = 0
+    var height = 0
+    var x = 0
+    var y = 0
+
+    val intrinsicWidth = measurable.maxIntrinsicWidth(Int.MAX_VALUE)
+    val intrinsicHeight = measurable.maxIntrinsicHeight(Int.MAX_VALUE)
+
+    fun measure(constraints: Constraints){
+        placeable = measurable.measure(constraints = constraints)
+    }
+
+
+
+    val place : Placeable.PlacementScope.(x :Int, y :Int) -> Unit = { x : Int, y : Int ->
+       placeable?.placeRelative(x = x, y = y)
+    }
+
+}
+
+
+class Rows(val stepMeasurables : List<Measurable>, val stepsPerRow: StepsPerRow){
+
+    val rows = arrayListOf<StepRow>()
+
+    init {
+        for (i in 0..stepMeasurables.size-1 step stepsPerRow.noOfSteps) {
+            rows.add(
+                StepRow(
+                    stepMeasurables.toMutableList().subList(i, i + stepsPerRow.noOfSteps   )
+                        .toList(),
+                    stepsPerRow = stepsPerRow
+                )
+            )
+        }
+    }
+
+    val steps
+        get() = rows.flatMap { it.steps }
+    val leftSteps
+        get() = steps.filter { it.stepAlignment == StepAlignment.LEFT }
+    val rightSteps
+        get() = steps.filter { it.stepAlignment == StepAlignment.RIGHT }
+
+    val maxLeftInstrinsicWidth
+        get() = leftSteps.maxOfOrNull { it.intrinsicWidth } ?: 0
+
+    val maxRightInstrinsicWidth
+        get() = rightSteps.maxOfOrNull { it.intrinsicWidth } ?: 0
+
+    fun remainingLeftStepWidth(constraints: Constraints) : Int{
+        val maxWidthEqualConstraints = equalConstraints(constraints = constraints).maxWidth
+        if(maxLeftInstrinsicWidth >= maxWidthEqualConstraints) return 0
+        else return maxWidthEqualConstraints - maxLeftInstrinsicWidth
+    }
+
+    fun remainingRightStepWidth(constraints: Constraints) : Int{
+        val maxWidthEqualConstraints = equalConstraints(constraints = constraints).maxWidth
+        if(maxRightInstrinsicWidth >= maxWidthEqualConstraints) return 0
+        else return maxWidthEqualConstraints - maxRightInstrinsicWidth
+    }
+
+
+    var isBiDirectionalStepper : Boolean = false
+        get(){
+            val steps = rows.flatMap { it.steps }
+            val leftSteps = steps.filter { it.stepAlignment == StepAlignment.LEFT }
+            val rightSteps = steps.filter { it.stepAlignment == StepAlignment.RIGHT }
+            return (leftSteps.isNotEmpty() && rightSteps.isNotEmpty())
+        }
+
+    fun measure(constraints: Constraints){
+        if(!isBiDirectionalStepper){
+            rows.forEach { it.measure(constraints, constraints) }
+        }else{
+            rows.forEach { it.measure(leftConstraints(constraints), rightConstraints(constraints)) }
+        }
+    }
+
+    val place : Placeable.PlacementScope.(x : Int, y : Int, x1 : Int, y1 : Int, verticalSpacing: Int) -> Unit = { x : Int, y : Int, x1 : Int, y1 : Int, verticalSpacing: Int ->
+        var yPosition = Math.max(y,y1)
+        rows.forEach {
+            it.place.invoke(this, x, yPosition, x1 , yPosition)
+            yPosition = yPosition + it.height + verticalSpacing
+        }
+    }
+
+    private fun equalConstraints(constraints: Constraints) = constraints.copy(
+        maxWidth = constraints.maxWidth / 2
+    )
+
+    private fun leftConstraints(constraints: Constraints) : Constraints{
+        if( maxLeftInstrinsicWidth >= equalConstraints(constraints = constraints).maxWidth)
+            return constraints
+        else
+            return constraints.copy(
+                maxWidth = equalConstraints(constraints = constraints).maxWidth + remainingRightStepWidth(constraints)
+            )
+        return constraints
+    }
+
+    private fun rightConstraints(constraints: Constraints) : Constraints{
+        if( maxRightInstrinsicWidth >= equalConstraints(constraints = constraints).maxWidth)
+            return constraints
+        else
+            return constraints.copy(
+                maxWidth = equalConstraints(constraints = constraints).maxWidth + remainingLeftStepWidth(constraints)
+            )
+        return constraints
+    }
+
+
+
 }
 
