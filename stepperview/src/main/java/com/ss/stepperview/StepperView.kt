@@ -1,6 +1,5 @@
 package com.ss.stepperview
 
-import android.graphics.Point
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -165,7 +164,7 @@ interface IndicatorMeasureAndPlaceHelpers {
 
     fun firstIndicatorPosition(firstIndicatorHeight: Int, alignment: StepIndicatorAlignment): Point
 }
-
+class Point(val x:Int,val y:Int)
 class IndicatorMeasureAndPlaceHelpersImpl(val stepRows: Rows) : IndicatorMeasureAndPlaceHelpers {
 
     override fun firstIndicatorPosition(
