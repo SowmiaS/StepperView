@@ -53,7 +53,21 @@ dependencies {
     implementation 'androidx.compose.runtime:runtime-rxjava2:1.0.5'
     implementation "androidx.constraintlayout:constraintlayout-compose:1.0.0-beta02"
 
-    testImplementation 'junit:junit:4.+'
+    // Dependencies for local unit tests
+    testImplementation "junit:junit:$jUnitVersion"
+    testImplementation ("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion",{
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib'
+    })
+    testImplementation "org.mockito:mockito-inline:$mockitoVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:1.5.31"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation("androidx.arch.core:core-testing:2.1.0", {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib'
+        exclude group: 'com.android.support', module: 'support-compat'
+        exclude group: 'com.android.support', module: 'support-annotations'
+        exclude group: 'com.android.support', module: 'support-core-utils'
+    })
+
 
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4:1.0.5'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

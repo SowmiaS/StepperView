@@ -13,6 +13,7 @@ class IndicatorMeasureAndPlaceHelperTest {
     @Test
     fun `first indicator should be aligned left to all left steps`(){
         val indicatorHeight = 30
+        whenever(stepRows).thenReturn(stepRows)
         whenever(stepRows.maxLeftInstrinsicWidth).thenReturn(100)
         val row: StepRow = Mockito.mock(StepRow::class.java)
         whenever(row.height).thenReturn(100)
