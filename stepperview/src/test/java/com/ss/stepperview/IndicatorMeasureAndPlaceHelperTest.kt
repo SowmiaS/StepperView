@@ -1,53 +1,52 @@
 package com.ss.stepperview
 
-import androidx.compose.ui.layout.Measurable
-import org.junit.Test
-import org.mockito.kotlin.whenever
-import org.assertj.core.api.Assertions.*
+import com.ss.stepperview.layout.StepRowLayout
+import com.ss.stepperview.layout.StepRowLayoutList
+import com.ss.stepperview.layout.helpers.IndicatorMeasureAndPlaceHelpersImpl
+import com.ss.stepperview.layoutmodifier.StepIndicatorAlignment
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
-import org.mockito.Mockito
+import org.junit.Test
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.stub
+import org.mockito.kotlin.whenever
 
 class IndicatorMeasureAndPlaceHelperTest {
-    val helper = StepRowMeasureAndPlaceHelpersImpl()
-    lateinit var stepRows : Rows
+
+    private lateinit var stepRows: StepRowLayoutList
+    private val indicatorHeight by lazy { 30 }
 
     @Before
-    fun setup(){
+    fun setup() {
+        stepRows = mock()
+        val rows : ArrayList<StepRowLayout> = mock()
+        whenever(stepRows.rows).thenReturn(rows)
+        whenever(stepRows.maxLeftIntrinsicWidth).thenReturn(300)
+        (0..4).forEach {
+            val stepRowLayout = mock<StepRowLayout>()
+            whenever(stepRowLayout.height).thenReturn(150 * (it+1) )
+            whenever(rows[it]).thenReturn(stepRowLayout)
+        }
     }
 
     @Test
     fun `first indicator should be aligned left to all left steps`(){
-        val measurable = mock<Measurable>()
-        whenever(measurable.maxIntrinsicWidth(Int.MAX_VALUE)).thenReturn(100)
-        whenever(measurable.parentData).thenReturn(StepAlignmentData(StepAlignment.LEFT))
-        val indicatorHeight = 30
-        stepRows = Rows(listOf(measurable),StepsPerRow.ONE,helper)
-        val row: StepRow = Mockito.mock(StepRow::class.java)
-        stepRows.rows.add(row)
-        whenever(row.height).thenReturn(100)
         val indicators = IndicatorMeasureAndPlaceHelpersImpl(stepRows)
-        assertThat(indicators.firstIndicatorPosition(indicatorHeight, StepIndicatorAlignment.CENTER).x ).isEqualTo(100)
+        assertThat(indicators.firstIndicatorPosition(indicatorHeight, StepIndicatorAlignment.CENTER).x ).isEqualTo(300)
+        assertThat(indicators.firstIndicatorPosition(indicatorHeight, StepIndicatorAlignment.TOP).x ).isEqualTo(300)
+        assertThat(indicators.firstIndicatorPosition(indicatorHeight, StepIndicatorAlignment.BOTTOM).x ).isEqualTo(300)
     }
 
     @Test
-    fun `when indicator alignment is top, indicator should be aligned to top of steps of that row`(){
+    fun `when indicator alignment is top, first indicator should be aligned to top of steps of that row`(){
 
     }
 
     @Test
-    fun `when indicator alignment is center, indicator should be aligned to center of steps of that row`(){
+    fun `when indicator alignment is center, first indicator should be aligned to center of steps of that row`(){
         val indicatorHeight = 30
-        stepRows = Rows(mock(),StepsPerRow.ONE,helper)
-
-        whenever(stepRows.maxLeftInstrinsicWidth).thenReturn(100)
-        val row: StepRow = Mockito.mock(StepRow::class.java)
-        stepRows.rows.add(row)
-        whenever(row.height).thenReturn(100)
         val indicators = IndicatorMeasureAndPlaceHelpersImpl(stepRows)
         val resultYPosition = indicators.firstIndicatorPosition(indicatorHeight, StepIndicatorAlignment.CENTER).y
-        assertThat(resultYPosition).isEqualTo(35)
+        assertThat(resultYPosition).isEqualTo(60)
     }
 
     @Test
