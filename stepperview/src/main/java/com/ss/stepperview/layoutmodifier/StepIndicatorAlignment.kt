@@ -18,7 +18,7 @@ internal class StepIndicatorAlignmentData(val stepIndicatorAlignment: StepIndica
     }
 }
 
-internal interface StepIndicatorScope {
+interface StepIndicatorScope {
     fun Modifier.align(stepIndicatorAlignment: StepIndicatorAlignment): Modifier
 }
 
@@ -29,6 +29,6 @@ internal object StepIndicatorScopeInstance : StepIndicatorScope {
         )
 }
 
-val Measurable.stepIndicatorAlignment
+internal val Measurable.stepIndicatorAlignment
     get() = (parentData as? StepIndicatorAlignmentData)?.stepIndicatorAlignment
         ?: StepIndicatorAlignment.CENTER

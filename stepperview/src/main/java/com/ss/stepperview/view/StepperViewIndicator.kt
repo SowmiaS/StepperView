@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun StepperViewIndicator(modifier: Modifier) {
+fun StepperViewIndicator(modifier: Modifier = Modifier) {
     OutlinedButton(
         onClick = { /*TODO*/ },
         modifier = modifier.size(10.dp),

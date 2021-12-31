@@ -11,13 +11,16 @@ import com.ss.stepperview.layout.helpers.IndicatorMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layout.helpers.LineMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layout.helpers.StepRowMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layoutmodifier.StepIndicatorAlignment
-import com.ss.stepperview.layoutmodifier.StepIndicatorScopeInstance.align
+import com.ss.stepperview.layoutmodifier.StepIndicatorScopeInstance
 import com.ss.stepperview.layoutmodifier.StepScope
 import com.ss.stepperview.layoutmodifier.StepScopeInstance
+import com.ss.stepperview.layoutmodifier.StepIndicatorScope
+import com.ss.stepperview.layoutmodifier.StepIndicatorAlignmentData
+
 import kotlin.math.max
 
-private const val LAYOUTID_STEPPERVIEW_INDICATOR = "LAYOUTID_STEPPERVIEW_INDICATOR"
-private const val LAYOUTID_STEPPERVIEW_LINE = "LAYOUTID_STEPPERVIEW_LINE"
+const val LAYOUTID_STEPPERVIEW_INDICATOR = "LAYOUTID_STEPPERVIEW_INDICATOR"
+const val LAYOUTID_STEPPERVIEW_LINE = "LAYOUTID_STEPPERVIEW_LINE"
 
 enum class StepsPerRow(val noOfSteps: Int) {
     ONE(1), TWO(2)
@@ -27,6 +30,10 @@ enum class StepsPerRow(val noOfSteps: Int) {
 fun StepperView(
     items: List<Any>,
     stepsPerRow: StepsPerRow = StepsPerRow.ONE,
+    indicator: @Composable StepIndicatorScope.() -> Unit = {
+        StepperViewIndicator(modifier = Modifier
+        .align(StepIndicatorAlignment.BOTTOM)) },
+
     content: @Composable StepScope.() -> Unit
 ) {
     StepperViewLayout(
@@ -34,13 +41,7 @@ fun StepperView(
         stepsPerRow = stepsPerRow,
         indicatorContent = {
             repeat(items.size) {
-                StepperViewIndicator(
-                    modifier = Modifier
-                        .layoutId(
-                            LAYOUTID_STEPPERVIEW_INDICATOR.plus(it)
-                        )
-                        .align(StepIndicatorAlignment.TOP)
-                )
+                    StepIndicatorScopeInstance.indicator()
             }
         },
         lineContent = {
@@ -60,13 +61,13 @@ fun StepperView(
 fun StepperViewLayout(
     modifier: Modifier = Modifier,
     stepsPerRow: StepsPerRow,
-    indicatorContent: @Composable () -> Unit,
+    indicatorContent: @Composable StepIndicatorScope.() -> Unit,
     lineContent: @Composable () -> Unit,
     stepContent: @Composable StepScope.() -> Unit
 ) {
     Layout(
         content = {
-            indicatorContent()
+            StepIndicatorScopeInstance.indicatorContent()
             lineContent()
             StepScopeInstance.stepContent()
         },
@@ -76,11 +77,10 @@ fun StepperViewLayout(
         val stepsMeasurables = measurables
             .filter {
                 it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_LINE)
-                    .not() && it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_INDICATOR)
-                    .not()
+                    .not() && it.parentData !is StepIndicatorAlignmentData
             }
         val indicatorMeasurables = measurables
-            .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_INDICATOR) }
+            .filter { it.parentData is StepIndicatorAlignmentData }
         val lineMeasurables = measurables
             .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_LINE) }
 
