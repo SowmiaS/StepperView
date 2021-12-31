@@ -5,7 +5,6 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import com.ss.stepperview.layout.base.BaseComponentList
 import com.ss.stepperview.layout.base.StepLineLayout
-import com.ss.stepperview.layout.helpers.IndicatorMeasureAndPlaceHelpers
 import com.ss.stepperview.layout.helpers.LineMeasureAndPlaceHelpers
 
 class StepLineLayoutList(
