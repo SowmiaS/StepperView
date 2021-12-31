@@ -5,26 +5,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Shapes
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberImagePainter
-import com.ss.stepperview.Step
-import com.ss.stepperview.StepAlignment
-import com.ss.stepperview.StepperView
-import com.ss.stepperview.StepsPerRow
+import com.ss.stepperview.layoutmodifier.StepAlignment
 import com.ss.stepperview.sample.R
 import com.ss.stepperview.sample.ui.theme.green01
 import com.ss.stepperview.sample.ui.theme.purple01
+import com.ss.stepperview.view.StepperView
+import com.ss.stepperview.view.StepsPerRow
 
 @Composable
 fun StudyTaskUI(selected: Boolean, studyTask: StudyTask, modifier : Modifier = Modifier){
@@ -108,7 +105,6 @@ fun StudyTaskStepperView(studyTaskList: ArrayList<StudyTask>){
             StudyTaskUI(selected = false, studyTask = it,
                 modifier = Modifier
                     .align(alignment))
-
         }
     }
 }
