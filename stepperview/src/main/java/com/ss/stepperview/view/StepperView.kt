@@ -7,6 +7,7 @@ import androidx.compose.ui.layout.layoutId
 import com.ss.stepperview.layout.StepRowLayoutList
 import com.ss.stepperview.layout.StepIndicatorLayoutList
 import com.ss.stepperview.layout.StepLineLayoutList
+import com.ss.stepperview.layout.helpers.DEFAULT_VERTICAL_SPACING
 import com.ss.stepperview.layout.helpers.IndicatorMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layout.helpers.LineMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layout.helpers.StepRowMeasureAndPlaceHelpersImpl
@@ -30,14 +31,15 @@ enum class StepsPerRow(val noOfSteps: Int) {
 fun StepperView(
     items: List<Any>,
     stepsPerRow: StepsPerRow = StepsPerRow.ONE,
+    verticalSpacing : Int = DEFAULT_VERTICAL_SPACING,
     indicator: @Composable StepIndicatorScope.() -> Unit = {
         StepperViewIndicator(modifier = Modifier
         .align(StepIndicatorAlignment.BOTTOM)) },
-
     content: @Composable StepScope.() -> Unit
 ) {
     StepperViewLayout(
         Modifier,
+        verticalSpacing = verticalSpacing,
         stepsPerRow = stepsPerRow,
         indicatorContent = {
             repeat(items.size) {
@@ -61,6 +63,7 @@ fun StepperView(
 fun StepperViewLayout(
     modifier: Modifier = Modifier,
     stepsPerRow: StepsPerRow,
+    verticalSpacing:Int,
     indicatorContent: @Composable StepIndicatorScope.() -> Unit,
     lineContent: @Composable () -> Unit,
     stepContent: @Composable StepScope.() -> Unit
@@ -86,7 +89,7 @@ fun StepperViewLayout(
 
 
         layout(constraints.maxWidth, constraints.maxHeight) {
-            val stepRowsMeasureAndPlaceHelpersImpl = StepRowMeasureAndPlaceHelpersImpl()
+            val stepRowsMeasureAndPlaceHelpersImpl = StepRowMeasureAndPlaceHelpersImpl(verticalSpacing)
             val stepRowsLayout = StepRowLayoutList(stepsMeasurables, stepsPerRow, stepRowsMeasureAndPlaceHelpersImpl)
             val indicatorMeasureAndPlaceHelpersImpl = IndicatorMeasureAndPlaceHelpersImpl(stepRowsLayout)
             val indicatorsLayout =

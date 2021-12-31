@@ -1,11 +1,11 @@
 package com.ss.stepperview.layout.helpers
 
-private const val VERTICAL_SPACING = 20
+internal const val DEFAULT_VERTICAL_SPACING = 20
 
 interface StepRowMeasureAndPlaceHelpers {
     fun verticalSpacing(belowStepRowWithIndex: Int): Int
 }
 
-class StepRowMeasureAndPlaceHelpersImpl : StepRowMeasureAndPlaceHelpers {
-    override fun verticalSpacing(belowStepRowWithIndex: Int): Int = VERTICAL_SPACING
+class StepRowMeasureAndPlaceHelpersImpl(val verticalSpacing: Int) : StepRowMeasureAndPlaceHelpers {
+    override fun verticalSpacing(belowStepRowWithIndex: Int): Int = verticalSpacing
 }
