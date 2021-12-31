@@ -17,18 +17,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberImagePainter
 import com.ss.stepperview.layoutmodifier.StepAlignment
-import com.ss.stepperview.view.StepperView
-import com.ss.stepperview.view.StepsPerRow
 import com.ss.stepperview.sample.R
 import com.ss.stepperview.sample.ui.theme.green01
 import com.ss.stepperview.sample.ui.theme.purple01
+import com.ss.stepperview.view.StepperView
+import com.ss.stepperview.view.StepsPerRow
 
 @Composable
 fun StudyTaskUI(selected: Boolean, studyTask: StudyTask, modifier : Modifier = Modifier){
     val backgroundColor = if(selected) purple01 else green01
     val textColor = if(backgroundColor == purple01) Color.White else Color.Black
     Column(modifier = modifier
-        .padding(start = 8.dp)
+        .padding(all = 8.dp)
         .width(140.dp)
         .background(color = backgroundColor, shape = RoundedCornerShape(10.dp))
         .padding(all = 8.dp)){
@@ -93,19 +93,18 @@ fun DefaultPreview() {
 @Composable
 fun StudyTaskStepperView(studyTaskList: ArrayList<StudyTask>){
     StepperView(items = studyTaskList,
-    stepsPerRow = StepsPerRow.TWO) {
+    stepsPerRow = StepsPerRow.ONE) {
         studyTaskList.forEachIndexed{ index, it ->
-            var alignment = StepAlignment.RIGHT
+            var alignment = StepAlignment.LEFT
             if( index % 2 == 0 || index % 5 == 0 ){
                 alignment = StepAlignment.RIGHT
             }
-            StudyTaskTimeUI(studyTask = it,
-                modifier = Modifier
-                    .align(StepAlignment.LEFT))
+//            StudyTaskTimeUI(studyTask = it,
+//                modifier = Modifier
+//                    .align(StepAlignment.RIGHT))
             StudyTaskUI(selected = false, studyTask = it,
                 modifier = Modifier
                     .align(alignment))
-
         }
     }
 }
