@@ -96,6 +96,7 @@ fun DefaultPreview() {
 fun StudyTaskStepperView(studyTaskList: ArrayList<StudyTask>){
     StepperView(items = studyTaskList,
     stepsPerRow = StepsPerRow.ONE,
+    verticalSpacing = 100,
     indicator = {
         StepperViewIndicator(modifier = Modifier
             .align(StepIndicatorAlignment.CENTER)) }
