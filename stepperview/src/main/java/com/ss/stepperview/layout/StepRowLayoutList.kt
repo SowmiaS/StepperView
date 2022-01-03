@@ -7,14 +7,15 @@ import com.ss.stepperview.view.StepsPerRow
 import com.ss.stepperview.layout.base.StepLayout
 import com.ss.stepperview.layout.helpers.StepRowMeasureAndPlaceHelpers
 import com.ss.stepperview.layoutmodifier.StepAlignment
+import com.ss.stepperview.layoutmodifier.StepVerticalAlignment
 import kotlin.math.max
 
-class StepRowLayout(stepMeasurables: List<Measurable>) {
+class StepRowLayout(stepMeasurables: List<Measurable>, stepAlignment: StepVerticalAlignment) {
 
     var stepLayouts = arrayListOf<StepLayout>()
 
     init {
-        stepMeasurables.forEach { stepLayouts.add(StepLayout(it)) }
+        stepMeasurables.forEach { stepLayouts.add(StepLayout(it, stepAlignment)) }
     }
 
     val height
@@ -22,7 +23,7 @@ class StepRowLayout(stepMeasurables: List<Measurable>) {
 
     fun measure(leftConstraints: Constraints, rightConstraints: Constraints) {
         stepLayouts.forEach {
-            when (it.stepAlignment) {
+            when (it.stepHorizontalAlignment) {
                 StepAlignment.LEFT -> it.measure(leftConstraints)
                 StepAlignment.RIGHT -> it.measure(rightConstraints)
             }
@@ -32,19 +33,38 @@ class StepRowLayout(stepMeasurables: List<Measurable>) {
     val place: Placeable.PlacementScope.(x: Int, y: Int, x1: Int, y1: Int) -> Unit =
         { x: Int, y: Int, x1: Int, y1: Int ->
             stepLayouts.forEach {
-                if (it.stepAlignment == StepAlignment.LEFT) {
-                    it.place.invoke(this, x, y)
+                if (it.stepHorizontalAlignment == StepAlignment.LEFT) {
+                    val yPosition = getYPosition(stepLayouts, it, y)
+                    it.place.invoke(this, x, yPosition)
                 } else {
-                    it.place.invoke(this, x1, y1)
+                    val yPosition = getYPosition(stepLayouts, it, y1)
+                    it.place.invoke(this, x1, yPosition)
                 }
             }
         }
+
+    private fun getYPosition(stepLayouts: List<StepLayout>, stepLayout: StepLayout, y: Int): Int {
+        var yPosition = y
+        if (stepLayouts.size == StepsPerRow.TWO.noOfSteps) {
+            val biggerStep = stepLayouts.maxByOrNull { it.placeable?.height ?: 0 }
+            val smallerStep = stepLayouts.minByOrNull { it.placeable?.height ?: 0 }
+            if (smallerStep == stepLayout) {
+                yPosition = when (smallerStep.stepVerticalAlignment) {
+                    StepVerticalAlignment.TOP -> y
+                    StepVerticalAlignment.CENTER -> y + (biggerStep?.height ?: 0) / 2 - (smallerStep.height) / 2
+                    StepVerticalAlignment.BOTTOM -> y + (biggerStep?.height ?: 0) - (smallerStep.height)
+                }
+            }
+        }
+        return yPosition
+    }
 }
 
 class StepRowLayoutList(
     stepMeasurables: List<Measurable>,
     stepsPerRow: StepsPerRow,
-    stepRowMeasureAndPlaceHelpers: StepRowMeasureAndPlaceHelpers
+    stepRowMeasureAndPlaceHelpers: StepRowMeasureAndPlaceHelpers,
+    stepVerticalAlignmentList: List<StepVerticalAlignment>
 ) : StepRowMeasureAndPlaceHelpers by stepRowMeasureAndPlaceHelpers {
 
     val rows = arrayListOf<StepRowLayout>()
@@ -53,7 +73,8 @@ class StepRowLayoutList(
         for (i in stepMeasurables.indices step stepsPerRow.noOfSteps) {
             rows.add(
                 StepRowLayout(
-                    stepMeasurables.toMutableList().subList(i, i + stepsPerRow.noOfSteps).toList()
+                    stepMeasurables.toMutableList().subList(i, i + stepsPerRow.noOfSteps).toList(),
+                    stepVerticalAlignmentList[i / stepsPerRow.noOfSteps]
                 )
             )
         }
@@ -62,9 +83,9 @@ class StepRowLayoutList(
     private val steps
         get() = rows.flatMap { it.stepLayouts }
     private val leftSteps
-        get() = steps.filter { it.stepAlignment == StepAlignment.LEFT }
+        get() = steps.filter { it.stepHorizontalAlignment == StepAlignment.LEFT }
     private val rightSteps
-        get() = steps.filter { it.stepAlignment == StepAlignment.RIGHT }
+        get() = steps.filter { it.stepHorizontalAlignment == StepAlignment.RIGHT }
     val maxLeftIntrinsicWidth
         get() = leftSteps.maxOfOrNull { it.intrinsicWidth } ?: 0
     private val maxRightIntrinsicWidth
@@ -85,8 +106,8 @@ class StepRowLayoutList(
     private val isBiDirectionalStepper: Boolean
         get() {
             val steps = rows.flatMap { it.stepLayouts }
-            val leftSteps = steps.filter { it.stepAlignment == StepAlignment.LEFT }
-            val rightSteps = steps.filter { it.stepAlignment == StepAlignment.RIGHT }
+            val leftSteps = steps.filter { it.stepHorizontalAlignment == StepAlignment.LEFT }
+            val rightSteps = steps.filter { it.stepHorizontalAlignment == StepAlignment.RIGHT }
             return (leftSteps.isNotEmpty() && rightSteps.isNotEmpty())
         }
 
