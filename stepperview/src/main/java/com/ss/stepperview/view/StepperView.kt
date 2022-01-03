@@ -1,12 +1,15 @@
 package com.ss.stepperview.view
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
-import com.ss.stepperview.layout.StepRowLayoutList
+import androidx.compose.ui.unit.dp
 import com.ss.stepperview.layout.StepIndicatorLayoutList
 import com.ss.stepperview.layout.StepLineLayoutList
+import com.ss.stepperview.layout.StepRowLayoutList
 import com.ss.stepperview.layout.helpers.IndicatorMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layout.helpers.LineMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layout.helpers.StepRowMeasureAndPlaceHelpersImpl
@@ -39,13 +42,17 @@ fun StepperView(
                         .layoutId(
                             LAYOUTID_STEPPERVIEW_INDICATOR.plus(it)
                         )
-                        .align(StepIndicatorAlignment.TOP)
+                        .align(StepIndicatorAlignment.TOP),
+                    size = 25.dp,
+                    border = BorderStroke(1.dp, Color.Blue),
+                    color = Color.Yellow,
                 )
             }
         },
         lineContent = {
             repeat(items.size - 1) {
-                StepperViewLine(modifier = Modifier.layoutId(LAYOUTID_STEPPERVIEW_LINE.plus(it)))
+                StepperViewLine(modifier = Modifier.layoutId(LAYOUTID_STEPPERVIEW_LINE.plus(it)),
+                color = Color.Blue)
             }
         },
         stepContent = {
