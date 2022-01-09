@@ -13,23 +13,39 @@ import com.ss.stepperview.layout.StepRowLayoutList
 import com.ss.stepperview.layout.helpers.IndicatorMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layout.helpers.LineMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layout.helpers.StepRowMeasureAndPlaceHelpersImpl
-import com.ss.stepperview.layoutmodifier.StepIndicatorAlignment
-import com.ss.stepperview.layoutmodifier.StepIndicatorScopeInstance.align
-import com.ss.stepperview.layoutmodifier.StepScope
+import com.ss.stepperview.layoutmodifier.*
+import com.ss.stepperview.layoutmodifier.StepIndicatorScopeInstance
 import com.ss.stepperview.layoutmodifier.StepScopeInstance
 import kotlin.math.max
 
-private const val LAYOUTID_STEPPERVIEW_INDICATOR = "LAYOUTID_STEPPERVIEW_INDICATOR"
-private const val LAYOUTID_STEPPERVIEW_LINE = "LAYOUTID_STEPPERVIEW_LINE"
+internal const val LAYOUTID_STEPPERVIEW_INDICATOR = "LAYOUTID_STEPPERVIEW_INDICATOR"
+internal const val LAYOUTID_STEPPERVIEW_LINE = "LAYOUTID_STEPPERVIEW_LINE"
 
 enum class StepsPerRow(val noOfSteps: Int) {
     ONE(1), TWO(2)
 }
+@Composable
+fun DefaultStepIndicator(): @Composable() (StepIndicatorScope.() -> Unit) =  {
+    StepperViewIndicator(
+        modifier = Modifier
+            .align(StepIndicatorAlignment.TOP),
+        size = 25.dp,
+        border = BorderStroke(1.dp, Color.Blue),
+        color = Color.Yellow)
+}
+
+@Composable
+fun DefaultStepLine(): @Composable () -> Unit =  {
+    StepperViewLine(color = Color.Blue)
+}
+
 
 @Composable
 fun StepperView(
     items: List<Any>,
     stepsPerRow: StepsPerRow = StepsPerRow.ONE,
+    indicatorContent: @Composable StepIndicatorScope.() -> Unit = DefaultStepIndicator(),
+    lineContent: @Composable () -> Unit = DefaultStepLine(),
     content: @Composable StepScope.() -> Unit
 ) {
     StepperViewLayout(
@@ -37,29 +53,17 @@ fun StepperView(
         stepsPerRow = stepsPerRow,
         indicatorContent = {
             repeat(items.size) {
-                StepperViewIndicator(
-                    modifier = Modifier
-                        .layoutId(
-                            LAYOUTID_STEPPERVIEW_INDICATOR.plus(it)
-                        )
-                        .align(StepIndicatorAlignment.TOP),
-                    size = 25.dp,
-                    border = BorderStroke(1.dp, Color.Blue),
-                    color = Color.Yellow,
-                )
+                StepIndicatorScopeInstance.indicatorContent()
             }
         },
         lineContent = {
             repeat(items.size - 1) {
-                StepperViewLine(modifier = Modifier.layoutId(LAYOUTID_STEPPERVIEW_LINE.plus(it)),
-                color = Color.Blue)
+                lineContent()
             }
         },
         stepContent = {
             StepScopeInstance.content()
         }
-
-
     )
 }
 
@@ -67,13 +71,13 @@ fun StepperView(
 fun StepperViewLayout(
     modifier: Modifier = Modifier,
     stepsPerRow: StepsPerRow,
-    indicatorContent: @Composable () -> Unit,
+    indicatorContent: @Composable StepIndicatorScope.() -> Unit,
     lineContent: @Composable () -> Unit,
     stepContent: @Composable StepScope.() -> Unit
 ) {
     Layout(
         content = {
-            indicatorContent()
+            StepIndicatorScopeInstance.indicatorContent()
             lineContent()
             StepScopeInstance.stepContent()
         },
@@ -83,11 +87,11 @@ fun StepperViewLayout(
         val stepsMeasurables = measurables
             .filter {
                 it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_LINE)
-                    .not() && it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_INDICATOR)
+                    .not() && (it.parentData is StepIndicatorAlignmentData)
                     .not()
             }
         val indicatorMeasurables = measurables
-            .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_INDICATOR) }
+            .filter { it.parentData is StepIndicatorAlignmentData }
         val lineMeasurables = measurables
             .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_LINE) }
 

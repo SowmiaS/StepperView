@@ -15,14 +15,15 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun StepperViewIndicator(
     modifier: Modifier,
-    border: BorderStroke = BorderStroke(1.dp, Color.Blue),
+    border: BorderStroke? = BorderStroke(1.dp, Color.Blue),
     contentPadding: PaddingValues = PaddingValues(5.dp),
     size: Dp = 10.dp,
     color: Color = Color.Yellow
 ) {
     OutlinedButton(
         onClick = { /*TODO*/ },
-        modifier = modifier.size(size),
+        modifier = modifier
+        .size(size),
         shape = CircleShape,
         border = border,
         contentPadding = contentPadding,
