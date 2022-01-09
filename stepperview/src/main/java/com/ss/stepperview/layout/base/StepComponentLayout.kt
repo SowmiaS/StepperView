@@ -4,6 +4,7 @@ import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import com.ss.stepperview.layoutmodifier.StepIndicatorAlignment
+import com.ss.stepperview.layoutmodifier.StepVerticalAlignment
 import com.ss.stepperview.layoutmodifier.stepAlignment
 import com.ss.stepperview.layoutmodifier.stepIndicatorAlignment
 
@@ -14,6 +15,7 @@ interface StepComponentLayout {
     var yPosition: Int
     var width: Int
     var height:Int
+    var placeable: Placeable?
     fun measure(constraints: Constraints)
     val place: Placeable.PlacementScope.(x: Int, y: Int) -> Unit
 }
@@ -23,7 +25,7 @@ internal class BaseStepComponentLayout(val measurable: Measurable) : StepCompone
         get() = measurable.maxIntrinsicWidth(Int.MAX_VALUE)
     override val intrinsicHeight: Int
         get() = measurable.maxIntrinsicHeight(Int.MAX_VALUE)
-    private var placeable: Placeable? = null
+    override var placeable: Placeable? = null
     override var xPosition: Int = 0
     override var yPosition: Int = 0
     override var width: Int = 0
@@ -42,9 +44,9 @@ internal class BaseStepComponentLayout(val measurable: Measurable) : StepCompone
     }
 }
 
-class StepLayout(private val measurable: Measurable) :
+class StepLayout(private val measurable: Measurable,val stepVerticalAlignment: StepVerticalAlignment) :
     StepComponentLayout by BaseStepComponentLayout(measurable = measurable) {
-    val stepAlignment
+    val stepHorizontalAlignment
         get() = measurable.stepAlignment
 }
 
