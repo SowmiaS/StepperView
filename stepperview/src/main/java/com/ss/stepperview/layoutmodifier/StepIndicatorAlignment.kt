@@ -29,6 +29,6 @@ internal object StepIndicatorScopeInstance : StepIndicatorScope {
         )
 }
 
-val Measurable.stepIndicatorAlignment
+internal val Measurable.stepIndicatorAlignment
     get() = (parentData as? StepIndicatorAlignmentData)?.stepIndicatorAlignment
         ?: StepIndicatorAlignment.CENTER

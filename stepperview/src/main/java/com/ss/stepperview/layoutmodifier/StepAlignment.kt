@@ -10,6 +10,12 @@ enum class StepAlignment {
     RIGHT
 }
 
+enum class StepVerticalAlignment{
+    TOP,
+    CENTER,
+    BOTTOM
+}
+
 internal class StepAlignmentData(val stepAlignment: StepAlignment) : ParentDataModifier {
     override fun Density.modifyParentData(parentData: Any?): Any {
         return this@StepAlignmentData

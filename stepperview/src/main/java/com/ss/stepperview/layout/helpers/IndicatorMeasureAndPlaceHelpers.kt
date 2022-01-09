@@ -22,7 +22,7 @@ class IndicatorMeasureAndPlaceHelpersImpl(private val stepRows: StepRowLayoutLis
         val yPosition = when (alignment) {
             StepIndicatorAlignment.CENTER -> stepRows.rows[0].height / 2 - firstIndicatorHeight / 2
             StepIndicatorAlignment.TOP -> 0
-            StepIndicatorAlignment.BOTTOM -> stepRows.rows[0].height / 2 + firstIndicatorHeight
+            StepIndicatorAlignment.BOTTOM -> stepRows.rows[0].height - firstIndicatorHeight
         }
         val xPosition = stepRows.maxLeftIntrinsicWidth
         return Point(xPosition, yPosition)

@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.ss.stepperview.layout.StepIndicatorLayoutList
 import com.ss.stepperview.layout.StepLineLayoutList
 import com.ss.stepperview.layout.StepRowLayoutList
+import com.ss.stepperview.layout.helpers.DEFAULT_VERTICAL_SPACING
 import com.ss.stepperview.layout.helpers.IndicatorMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layout.helpers.LineMeasureAndPlaceHelpersImpl
 import com.ss.stepperview.layout.helpers.StepRowMeasureAndPlaceHelpersImpl
@@ -44,6 +45,7 @@ fun DefaultStepLine(): @Composable () -> Unit =  {
 fun StepperView(
     items: List<Any>,
     stepsPerRow: StepsPerRow = StepsPerRow.ONE,
+    verticalSpacing : Int = DEFAULT_VERTICAL_SPACING,
     indicatorContent: @Composable StepIndicatorScope.() -> Unit = DefaultStepIndicator(),
     lineContent: @Composable () -> Unit = DefaultStepLine(),
     content: @Composable StepScope.() -> Unit
@@ -51,6 +53,7 @@ fun StepperView(
     StepperViewLayout(
         Modifier,
         stepsPerRow = stepsPerRow,
+        verticalSpacing = verticalSpacing,
         indicatorContent = {
             repeat(items.size) {
                 StepIndicatorScopeInstance.indicatorContent()
@@ -71,6 +74,7 @@ fun StepperView(
 fun StepperViewLayout(
     modifier: Modifier = Modifier,
     stepsPerRow: StepsPerRow,
+    verticalSpacing:Int,
     indicatorContent: @Composable StepIndicatorScope.() -> Unit,
     lineContent: @Composable () -> Unit,
     stepContent: @Composable StepScope.() -> Unit
@@ -92,13 +96,21 @@ fun StepperViewLayout(
             }
         val indicatorMeasurables = measurables
             .filter { it.parentData is StepIndicatorAlignmentData }
+        val stepVerticalAlignmentList: List<StepVerticalAlignment> = indicatorMeasurables
+            .map { it.stepIndicatorAlignment }
+            .map {
+                when (it) {
+                    StepIndicatorAlignment.TOP -> StepVerticalAlignment.TOP
+                    StepIndicatorAlignment.CENTER -> StepVerticalAlignment.CENTER
+                    StepIndicatorAlignment.BOTTOM -> StepVerticalAlignment.BOTTOM
+                }
+            }
         val lineMeasurables = measurables
             .filter { it.layoutId.toString().contains(LAYOUTID_STEPPERVIEW_LINE) }
 
-
         layout(constraints.maxWidth, constraints.maxHeight) {
-            val stepRowsMeasureAndPlaceHelpersImpl = StepRowMeasureAndPlaceHelpersImpl()
-            val stepRowsLayout = StepRowLayoutList(stepsMeasurables, stepsPerRow, stepRowsMeasureAndPlaceHelpersImpl)
+            val stepRowsMeasureAndPlaceHelpersImpl = StepRowMeasureAndPlaceHelpersImpl(verticalSpacing)
+            val stepRowsLayout = StepRowLayoutList(stepsMeasurables, stepsPerRow, stepRowsMeasureAndPlaceHelpersImpl, stepVerticalAlignmentList)
             val indicatorMeasureAndPlaceHelpersImpl = IndicatorMeasureAndPlaceHelpersImpl(stepRowsLayout)
             val indicatorsLayout =
                 StepIndicatorLayoutList(indicatorMeasurables, indicatorMeasureAndPlaceHelpersImpl)
