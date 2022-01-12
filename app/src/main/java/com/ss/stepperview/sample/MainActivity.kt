@@ -37,8 +37,7 @@ class MainActivity : ComponentActivity() {
                 Surface(color = Color.White) {
                     StudyTaskStepperView(
                         studyTaskList,
-
-                        )
+                    )
                 }
             }
         }

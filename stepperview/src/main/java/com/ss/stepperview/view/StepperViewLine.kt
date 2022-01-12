@@ -6,13 +6,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun StepperViewLine(modifier: Modifier) {
+fun StepperViewLine(
+    modifier: Modifier = Modifier,
+    color: Color = Color.Blue,
+    width: Dp = 2.dp
+) {
     Box(
         modifier = modifier
-            .width(1.dp)
-            .background(Color.Blue)
+            .layoutId(LAYOUTID_STEPPERVIEW_LINE)
+            .width(width)
+            .background(color)
     )
+
 }

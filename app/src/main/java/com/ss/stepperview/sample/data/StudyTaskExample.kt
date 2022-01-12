@@ -1,5 +1,6 @@
 package com.ss.stepperview.sample.data
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -18,12 +20,11 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberImagePainter
 import com.ss.stepperview.layoutmodifier.StepAlignment
 import com.ss.stepperview.layoutmodifier.StepIndicatorAlignment
+import com.ss.stepperview.layoutmodifier.StepIndicatorScope
 import com.ss.stepperview.sample.R
 import com.ss.stepperview.sample.ui.theme.green01
 import com.ss.stepperview.sample.ui.theme.purple01
-import com.ss.stepperview.view.StepperView
-import com.ss.stepperview.view.StepperViewIndicator
-import com.ss.stepperview.view.StepsPerRow
+import com.ss.stepperview.view.*
 
 @Composable
 fun StudyTaskUI(selected: Boolean, studyTask: StudyTask, modifier : Modifier = Modifier){
@@ -91,27 +92,44 @@ fun DefaultPreview() {
     )
 }
 
-
 @Composable
 fun StudyTaskStepperView(studyTaskList: ArrayList<StudyTask>){
     StepperView(items = studyTaskList,
-    stepsPerRow = StepsPerRow.ONE,
-    verticalSpacing = 100,
-    indicator = {
-        StepperViewIndicator(modifier = Modifier
-            .align(StepIndicatorAlignment.CENTER)) }
+    stepsPerRow = StepsPerRow.TWO,
+    indicatorContent = DefaultStepIndicator(),
+    lineContent = DefaultStepLine()
     ) {
         studyTaskList.forEachIndexed{ index, it ->
-            var alignment = StepAlignment.LEFT
+            var alignment = StepAlignment.RIGHT
             if( index % 2 == 0 || index % 5 == 0 ){
                 alignment = StepAlignment.RIGHT
             }
-//            StudyTaskTimeUI(studyTask = it,
-//                modifier = Modifier
-//                    .align(StepAlignment.RIGHT))
+            StudyTaskTimeUI(studyTask = it,
+                modifier = Modifier
+                    .align(StepAlignment.LEFT))
             StudyTaskUI(selected = false, studyTask = it,
                 modifier = Modifier
                     .align(alignment))
         }
     }
 }
+
+@Composable
+fun DefaultStepIndicator(): @Composable() (StepIndicatorScope.() -> Unit) =  {
+    StepperViewIndicator(
+        modifier = Modifier
+            .align(StepIndicatorAlignment.TOP),
+        size = 5.dp,
+        border = null,
+        color = Color.Magenta)
+}
+
+@Composable
+fun DefaultStepLine(): @Composable () -> Unit =  {
+    StepperViewLine(
+    modifier = Modifier.padding(top = 0.dp, bottom = 10.dp),
+    color = Color.Magenta,
+    width = 1.dp)
+}
+
+
