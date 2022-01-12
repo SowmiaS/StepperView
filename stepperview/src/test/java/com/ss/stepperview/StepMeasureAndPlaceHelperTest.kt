@@ -9,7 +9,7 @@ class StepMeasureAndPlaceHelperTest {
     // Once vertical spacing is made configurable, test has to be updated.
     @Test
     fun `vertical spacing should be equal to default value - 20`(){
-        val stepHelper = StepRowMeasureAndPlaceHelpersImpl()
+        val stepHelper = StepRowMeasureAndPlaceHelpersImpl(20)
         assertThat(stepHelper.verticalSpacing(0) ).isEqualTo(20)
     }
 }
