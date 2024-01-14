@@ -9,6 +9,7 @@
 
 # Table of Contents
 #### Features
+
   - Support for Vertical StepperView (Horizontal support is planned for future releases)
   - Support for modifier to align Steps LEFT or RIGHT
   - Support for modifier to align Indicators TOP or BOTTOM or CENTER
